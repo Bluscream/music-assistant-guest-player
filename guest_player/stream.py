@@ -27,6 +27,8 @@ async def stream_track_audio(
     """Stream real-time transcoded MP3 (192k) directly to client browser."""
     try:
         m_type = MediaType.RADIO if media_type == "radio" else MediaType.TRACK
+        stream_details = None
+
         if "://" in item_id:
             uri_prov, rest = item_id.split("://", 1)
             uri_parts = rest.split("/", 1)
@@ -51,7 +53,19 @@ async def stream_track_audio(
             try:
                 stream_details = await prov.get_stream_details(item_id, m_type)
             except Exception:
-                stream_details = None
+                # If provider is filesystem_local or similar with multiple instances, try others of same domain
+                if getattr(prov, "domain", None):
+                    for p in mass.providers:
+                        if p.domain == prov.domain and p.instance_id != prov.instance_id and getattr(p, "available", True):
+                            try:
+                                stream_details = await p.get_stream_details(item_id, m_type)
+                                if stream_details:
+                                    prov = p
+                                    break
+                            except Exception:
+                                continue
+                if not stream_details:
+                    stream_details = None
 
         if not stream_details:
             if m_type == MediaType.RADIO:
