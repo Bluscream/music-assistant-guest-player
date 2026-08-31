@@ -69,6 +69,9 @@ class GuestPlayerPlugin(PluginProvider):
         self._unregister_share_route = self.mass.webserver.register_dynamic_route(
             "/s/*", _guest_dispatcher, "GET"
         )
+        self._unregister_s_exact = self.mass.webserver.register_dynamic_route(
+            "/s", _guest_dispatcher, "GET"
+        )
         self._unregister_stream_route = self.mass.webserver.register_dynamic_route(
             "/stream_guest/*", _guest_dispatcher, "GET"
         )
