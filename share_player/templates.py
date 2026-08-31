@@ -37,6 +37,7 @@ def render_player_page(
     else:
         description = f"Listen on {site_name}"
 
+    escaped_title = html.escape(title)
     escaped_desc = html.escape(description)
     escaped_site_name = html.escape(site_name)
     # Ensure image_url is absolute so Discord proxy can fetch it
