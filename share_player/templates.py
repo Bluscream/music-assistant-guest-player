@@ -445,10 +445,10 @@ def render_player_page(
 
     <div class="controls-row">
       <div class="player-side">
-        <a href="https://music-assistant.io" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); font-size: 0.75rem; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: color 0.2s ease;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'">
+        <div style="color: var(--text-muted); font-size: 0.75rem; display: flex; align-items: center; gap: 5px;">
           <i class="fa-solid fa-bolt" style="color: var(--accent); font-size: 0.7rem;"></i>
-          <span>Powered by <strong>Music Assistant</strong></span>
-        </a>
+          <span>Powered by <a href="https://music-assistant.io" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline; transition: color 0.2s ease;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'"><strong>Music Assistant</strong></a> and <a href="https://github.com/Bluscream/music-assistant-guest-share-player" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline; transition: color 0.2s ease;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'"><strong>Guest Player</strong></a></span>
+        </div>
       </div>
       <div class="center-controls">
         <button class="btn-ctrl" id="prevBtn" title="Previous"><i class="fa-solid fa-backward-step"></i></button>

@@ -22,6 +22,7 @@ async def stream_track_audio(
     request: web.Request,
     provider_id: str,
     item_id: str,
+    cache_bypass: bool = True,
 ) -> web.StreamResponse | web.Response:
     """Stream real-time transcoded MP3 (192k) directly to client browser."""
     try:
@@ -71,16 +72,21 @@ async def stream_track_audio(
             bit_rate=192,
         )
 
-        response = web.StreamResponse(
-            status=200,
-            headers={
-                "Content-Type": "audio/mpeg",
+        headers = {
+            "Content-Type": "audio/mpeg",
+            "Accept-Ranges": "none",
+            "Access-Control-Allow-Origin": "*",
+        }
+        if cache_bypass:
+            headers.update({
                 "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
                 "Pragma": "no-cache",
                 "Expires": "0",
-                "Accept-Ranges": "none",
-                "Access-Control-Allow-Origin": "*",
-            },
+            })
+
+        response = web.StreamResponse(
+            status=200,
+            headers=headers,
         )
         await response.prepare(request)
 

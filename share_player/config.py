@@ -11,10 +11,12 @@ if TYPE_CHECKING:
 CONF_PUBLIC_BASE_URL = "public_base_url"
 CONF_SITE_NAME = "site_name"
 CONF_THEME_COLOR = "theme_color"
+CONF_CACHE_BYPASS = "cache_bypass"
 
 DEFAULT_PUBLIC_BASE_URL = "https://m.minopia.de"
 DEFAULT_SITE_NAME = "Music Assistant"
-DEFAULT_THEME_COLOR = "#FF3366"
+DEFAULT_THEME_COLOR = "#3080ff"
+DEFAULT_CACHE_BYPASS = True
 
 
 async def get_config_entries(
@@ -46,9 +48,17 @@ async def get_config_entries(
         ConfigEntry(
             key=CONF_THEME_COLOR,
             type=ConfigEntryType.STRING,
-            label="Embed Accent Color (Hex)",
+            label="Player & Embed Accent Color (Hex)",
             default_value=DEFAULT_THEME_COLOR,
-            description="Hex color code for Discord embed sidebar (e.g. #FF3366).",
+            description="Hex accent color for playback controls, progress bar, and Discord embed sidebar (e.g. #3080ff).",
+            required=False,
+        ),
+        ConfigEntry(
+            key=CONF_CACHE_BYPASS,
+            type=ConfigEntryType.BOOLEAN,
+            label="Enable CDN / Browser Cache Bypass",
+            default_value=DEFAULT_CACHE_BYPASS,
+            description="Appends anti-caching query parameters and strict no-store headers to audio stream requests to prevent Cloudflare and CDNs from caching audio or error responses.",
             required=False,
         ),
     )

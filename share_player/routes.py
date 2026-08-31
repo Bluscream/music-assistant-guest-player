@@ -10,9 +10,11 @@ from typing import TYPE_CHECKING, Any
 from aiohttp import web
 
 from .config import (
+    CONF_CACHE_BYPASS,
     CONF_PUBLIC_BASE_URL,
     CONF_SITE_NAME,
     CONF_THEME_COLOR,
+    DEFAULT_CACHE_BYPASS,
     DEFAULT_PUBLIC_BASE_URL,
     DEFAULT_SITE_NAME,
     DEFAULT_THEME_COLOR,
@@ -150,6 +152,7 @@ async def handle_api_info(plugin: GuestSharePlayerPlugin, request: web.Request) 
     item_id = "/".join(parts[3:])
 
     base_url = plugin.config.get_value(CONF_PUBLIC_BASE_URL, DEFAULT_PUBLIC_BASE_URL).rstrip("/")
+    cache_bypass = plugin.config.get_value(CONF_CACHE_BYPASS, DEFAULT_CACHE_BYPASS)
     tracks_list = []
 
     try:
@@ -163,12 +166,15 @@ async def handle_api_info(plugin: GuestSharePlayerPlugin, request: web.Request) 
                 pm = next(iter(t.provider_mappings)) if t.provider_mappings else None
                 t_prov = pm.provider_instance if pm else provider_id
                 t_id = pm.item_id if pm else t.item_id
+                s_url = f"/stream_guest/track/{t_prov}/{urllib.parse.quote(str(t_id))}"
+                if cache_bypass:
+                    s_url += f"?v={int(time.time())}"
                 tracks_list.append({
                     "name": t.name,
                     "artist": art_name,
                     "duration": t.duration,
                     "image": get_image_url(plugin, t, base_url) if hasattr(t, "image") and t.image else album_img,
-                    "stream_url": f"/stream_guest/track/{t_prov}/{urllib.parse.quote(str(t_id))}",
+                    "stream_url": s_url,
                 })
         elif media_type == "playlist":
             playlist = await plugin.mass.music.playlists.get(item_id, provider_id)
@@ -180,12 +186,15 @@ async def handle_api_info(plugin: GuestSharePlayerPlugin, request: web.Request) 
                 pm = next(iter(t.provider_mappings)) if t.provider_mappings else None
                 t_prov = pm.provider_instance if pm else provider_id
                 t_id = pm.item_id if pm else t.item_id
+                s_url = f"/stream_guest/track/{t_prov}/{urllib.parse.quote(str(t_id))}"
+                if cache_bypass:
+                    s_url += f"?v={int(time.time())}"
                 tracks_list.append({
                     "name": t.name,
                     "artist": art_name,
                     "duration": t.duration,
                     "image": get_image_url(plugin, t, base_url) if hasattr(t, "image") and t.image else pl_img,
-                    "stream_url": f"/stream_guest/track/{t_prov}/{urllib.parse.quote(str(t_id))}?v={int(time.time())}",
+                    "stream_url": s_url,
                 })
         else:  # track
             track = await plugin.mass.music.tracks.get(item_id, provider_id)
@@ -193,12 +202,15 @@ async def handle_api_info(plugin: GuestSharePlayerPlugin, request: web.Request) 
             pm = next(iter(track.provider_mappings)) if track.provider_mappings else None
             t_prov = pm.provider_instance if pm else provider_id
             t_id = pm.item_id if pm else track.item_id
+            s_url = f"/stream_guest/track/{t_prov}/{urllib.parse.quote(str(t_id))}"
+            if cache_bypass:
+                s_url += f"?v={int(time.time())}"
             tracks_list.append({
                 "name": track.name,
                 "artist": art_name,
                 "duration": track.duration,
                 "image": get_image_url(plugin, track, base_url),
-                "stream_url": f"/stream_guest/track/{t_prov}/{urllib.parse.quote(str(t_id))}?v={int(time.time())}",
+                "stream_url": s_url,
             })
     except Exception as e:
         LOGGER.exception("Error preparing guest api payload: %s", e)
@@ -215,4 +227,5 @@ async def handle_stream_audio(plugin: GuestSharePlayerPlugin, request: web.Reque
 
     provider_id = parts[2]
     item_id = urllib.parse.unquote("/".join(parts[3:]))
-    return await stream_track_audio(plugin.mass, request, provider_id, item_id)
+    cache_bypass = plugin.config.get_value(CONF_CACHE_BYPASS, DEFAULT_CACHE_BYPASS)
+    return await stream_track_audio(plugin.mass, request, provider_id, item_id, cache_bypass=cache_bypass)
