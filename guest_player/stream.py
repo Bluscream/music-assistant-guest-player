@@ -28,31 +28,30 @@ async def stream_track_audio(
     try:
         m_type = MediaType.RADIO if media_type == "radio" else MediaType.TRACK
         if "://" in item_id:
-            # Handle URI like ytmusic_free://track/HywmOi3eWJk or filesystem_local://track/...
             uri_prov, rest = item_id.split("://", 1)
             uri_parts = rest.split("/", 1)
             uri_item_id = uri_parts[1] if len(uri_parts) > 1 else uri_parts[0]
-            # Find an active provider instance matching uri_prov
-            target_prov = None
+            # Try all active provider instances matching uri_prov
             for p in mass.providers:
-                if p.domain == uri_prov or p.instance_id == uri_prov:
-                    target_prov = p
-                    break
-            if target_prov:
-                prov = target_prov
-                item_id = uri_item_id
-            else:
+                if (p.domain == uri_prov or p.instance_id == uri_prov) and getattr(p, "available", True):
+                    try:
+                        stream_details = await p.get_stream_details(uri_item_id, m_type)
+                        if stream_details:
+                            prov = p
+                            item_id = uri_item_id
+                            break
+                    except Exception:
+                        continue
+            if not stream_details:
                 prov = mass.get_provider(provider_id)
         else:
             prov = mass.get_provider(provider_id)
 
-        if prov:
+        if prov and not stream_details:
             try:
                 stream_details = await prov.get_stream_details(item_id, m_type)
             except Exception:
                 stream_details = None
-        else:
-            stream_details = None
 
         if not stream_details:
             if m_type == MediaType.RADIO:
