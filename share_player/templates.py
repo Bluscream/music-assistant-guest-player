@@ -17,27 +17,47 @@ def render_player_page(
     site_name: str,
     theme_color: str,
     duration: int = 0,
+    title_template: str = "{title}",
+    desc_template: str = "🎵 {media_type_label} by {artist}{duration_str}",
+    footer_template: str = "",
 ) -> str:
     """Generate modern full-width Music Assistant styled player matching the official UI."""
-    # Build clean Discord description (meta tags do not parse markdown like **)
-    if media_type == "track":
-        dur_str = f" • {duration // 60}:{duration % 60:02d}" if duration else ""
-        if artist_name:
-            description = f"🎵 Track by {artist_name}{dur_str}\n▶️ Click above to play live"
-        else:
-            description = f"🎵 Track{dur_str}\n▶️ Click above to play live"
-    elif media_type == "playlist":
-        description = f"📋 Playlist • Stream on {site_name}\n▶️ Click above to open and listen"
-    elif media_type == "album":
-        if artist_name:
-            description = f"💿 Album by {artist_name}\n▶️ Click above to listen"
-        else:
-            description = f"💿 Album • Stream on {site_name}\n▶️ Click above to listen"
-    else:
-        description = f"Listen on {site_name}"
+    media_type_map = {
+        "track": "Track",
+        "album": "Album",
+        "playlist": "Playlist",
+        "artist": "Artist",
+    }
+    media_type_label = media_type_map.get(media_type.lower(), media_type.capitalize())
+    dur_str = f" • {duration // 60}:{duration % 60:02d}" if duration else ""
+    dur_formatted = f"{duration // 60}:{duration % 60:02d}" if duration else "0:00"
 
-    escaped_title = html.escape(title)
-    escaped_desc = html.escape(description)
+    context = {
+        "title": title or "",
+        "artist": artist_name or site_name or "",
+        "site_name": site_name or "Music Assistant",
+        "media_type": media_type or "track",
+        "media_type_label": media_type_label,
+        "duration": dur_formatted,
+        "duration_str": dur_str,
+    }
+
+    def safe_format(tmpl: str, default_val: str) -> str:
+        if not tmpl:
+            return default_val
+        try:
+            return tmpl.format(**context)
+        except Exception:
+            return default_val
+
+    rendered_title = safe_format(title_template, title or f"{media_type_label} on {site_name}")
+    rendered_desc = safe_format(desc_template, f"🎵 {media_type_label} by {artist_name or site_name}{dur_str}")
+    rendered_footer = safe_format(footer_template, "").strip()
+    if rendered_footer:
+        rendered_desc = f"{rendered_desc}\n{rendered_footer}"
+
+    escaped_title = html.escape(rendered_title)
+    escaped_desc = html.escape(rendered_desc)
     escaped_site_name = html.escape(site_name)
     # Ensure image_url is absolute so Discord proxy can fetch it
     full_img_url = image_url if image_url.startswith("http") else f"{page_url.split('/s/')[0]}{image_url}"

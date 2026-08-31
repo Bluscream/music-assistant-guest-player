@@ -11,10 +11,16 @@ from aiohttp import web
 
 from .config import (
     CONF_CACHE_BYPASS,
+    CONF_EMBED_DESC_TEMPLATE,
+    CONF_EMBED_FOOTER_TEMPLATE,
+    CONF_EMBED_TITLE_TEMPLATE,
     CONF_PUBLIC_BASE_URL,
     CONF_SITE_NAME,
     CONF_THEME_COLOR,
     DEFAULT_CACHE_BYPASS,
+    DEFAULT_EMBED_DESC_TEMPLATE,
+    DEFAULT_EMBED_FOOTER_TEMPLATE,
+    DEFAULT_EMBED_TITLE_TEMPLATE,
     DEFAULT_PUBLIC_BASE_URL,
     DEFAULT_SITE_NAME,
     DEFAULT_THEME_COLOR,
@@ -106,6 +112,9 @@ async def handle_share_view(plugin: GuestSharePlayerPlugin, request: web.Request
     base_url = plugin.config.get_value(CONF_PUBLIC_BASE_URL, DEFAULT_PUBLIC_BASE_URL).rstrip("/")
     site_name = plugin.config.get_value(CONF_SITE_NAME, DEFAULT_SITE_NAME)
     theme_color = plugin.config.get_value(CONF_THEME_COLOR, DEFAULT_THEME_COLOR)
+    title_template = plugin.config.get_value(CONF_EMBED_TITLE_TEMPLATE, DEFAULT_EMBED_TITLE_TEMPLATE)
+    desc_template = plugin.config.get_value(CONF_EMBED_DESC_TEMPLATE, DEFAULT_EMBED_DESC_TEMPLATE)
+    footer_template = plugin.config.get_value(CONF_EMBED_FOOTER_TEMPLATE, DEFAULT_EMBED_FOOTER_TEMPLATE)
 
     try:
         item = await resolve_media_item(plugin, media_type, provider_id, item_id)
@@ -140,6 +149,9 @@ async def handle_share_view(plugin: GuestSharePlayerPlugin, request: web.Request
         site_name=site_name,
         theme_color=theme_color,
         duration=item_duration,
+        title_template=title_template,
+        desc_template=desc_template,
+        footer_template=footer_template,
     )
     return web.Response(text=html_text, content_type="text/html")
 
