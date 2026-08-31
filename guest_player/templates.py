@@ -136,7 +136,7 @@ def render_player_page(
         ".btn-ctrl{background:none;border:none;color:var(--text-muted);font-size:1.1rem;cursor:pointer;padding:8px 12px;border-radius:50%;transition:all 0.2s ease;display:flex;align-items:center;justify-content:center;}"
         ".btn-ctrl:hover{color:#fff;transform:scale(1.1);}"
         ".btn-main-play{background:#fff;color:#000;font-size:1.3rem;width:48px;height:48px;border-radius:50%;box-shadow:0 4px 16px rgba(255,255,255,0.2);}"
-        ".btn-main-play:hover{background:var(--accent);color:#fff;transform:scale(1.08);box-shadow:0 6px 20px rgba(255,51,102,0.4);}"
+        ".btn-main-play:hover{background:var(--accent);color:#fff;transform:scale(1.08);box-shadow:0 6px 24px color-mix(in srgb,var(--accent) 45%,transparent);}"
         ".volume-ctrl{display:flex;align-items:center;gap:10px;width:25%;justify-content:flex-end;}"
         ".vol-slider{accent-color:var(--accent);cursor:pointer;width:90px;}"
         ".tracklist-scroll::-webkit-scrollbar{width:5px;}"
