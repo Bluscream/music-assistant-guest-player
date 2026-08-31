@@ -9,16 +9,22 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from aiohttp import web
 from music_assistant.models.plugin import PluginProvider
 
-from .config import get_config_entries
-from .routes import handle_api_info, handle_image_guest, handle_share_view, handle_stream_audio
+from .config import get_config_entries as get_config_entries
+from .routes import (
+    handle_api_info,
+    handle_image_guest,
+    handle_share_view,
+    handle_stream_audio,
+)
 
 if TYPE_CHECKING:
-    from music_assistant_models.config_entries import ProviderConfig
-    from music_assistant_models.provider import ProviderManifest
     from music_assistant.mass import MusicAssistant
     from music_assistant.models import ProviderInstanceType
+    from music_assistant_models.config_entries import ProviderConfig
+    from music_assistant_models.provider import ProviderManifest
 
 SUPPORTED_FEATURES = set()
 

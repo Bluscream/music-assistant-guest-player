@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from music_assistant_models.config_entries import ConfigEntry, ConfigValueType
     from music_assistant.mass import MusicAssistant
+    from music_assistant_models.config_entries import ConfigEntry, ConfigValueType
 
 CONF_PUBLIC_BASE_URL = "public_base_url"
 CONF_SITE_NAME = "site_name"

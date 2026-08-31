@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import html
 import json
-from typing import Any
 
 
 def render_player_page(

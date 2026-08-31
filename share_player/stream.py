@@ -6,10 +6,9 @@ import logging
 from typing import TYPE_CHECKING
 
 from aiohttp import web
-
+from music_assistant.helpers.ffmpeg import get_ffmpeg_stream
 from music_assistant_models.enums import ContentType, MediaType
 from music_assistant_models.media_items import AudioFormat
-from music_assistant.helpers.ffmpeg import get_ffmpeg_stream
 
 if TYPE_CHECKING:
     from music_assistant.mass import MusicAssistant
