@@ -23,7 +23,7 @@ from .routes import (
 if TYPE_CHECKING:
     from music_assistant.mass import MusicAssistant
     from music_assistant.models import ProviderInstanceType
-    from music_assistant_models.config_entries import ProviderConfig
+    from music_assistant_models.config_entries import ConfigEntry, ConfigValueType, ProviderConfig
     from music_assistant_models.provider import ProviderManifest
 
 SUPPORTED_FEATURES = set()
@@ -43,6 +43,14 @@ class GuestSharePlayerPlugin(PluginProvider):
     _unregister_stream_route: Any
     _unregister_info_route: Any
     _unregister_image_route: Any
+
+    async def get_config_entries(
+        self,
+        action: str | None = None,
+        values: dict[str, ConfigValueType] | None = None,
+    ) -> tuple[ConfigEntry, ...]:
+        """Return Config entries to configure this provider instance."""
+        return await get_config_entries(self.mass, self.instance_id, action=action, values=values)
 
     async def loaded_in_mass(self) -> None:
         """Call after the provider has been loaded."""
