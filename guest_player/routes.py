@@ -275,11 +275,22 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
 
                 # Pick an active streaming provider mapping if available
                 pms = list(t.provider_mappings) if hasattr(t, "provider_mappings") and t.provider_mappings else []
-                if not pms and not is_radio and hasattr(t, "item_id") and getattr(t, "provider", None) == "library":
-                    try:
-                        pms = await plugin.mass.music.tracks.get_provider_mappings(t.item_id, "library")
-                    except Exception:
-                        pms = []
+                raw_id = str(getattr(t, "item_id", ""))
+                
+                # Check if raw_id is a URI (e.g. spotify://track/..., ytmusic_free://track/...)
+                uri_prov_domain = None
+                uri_actual_id = raw_id
+                if "://" in raw_id:
+                    uri_prov_domain, uri_rest = raw_id.split("://", 1)
+                    uri_parts = uri_rest.split("/", 1)
+                    uri_actual_id = uri_parts[1] if len(uri_parts) > 1 else uri_parts[0]
+
+                if not pms and not is_radio:
+                    if hasattr(t, "item_id") and getattr(t, "provider", None) == "library":
+                        try:
+                            pms = await plugin.mass.music.tracks.get_provider_mappings(t.item_id, "library")
+                        except Exception:
+                            pms = []
 
                 valid_pm = None
                 for pm in pms:
@@ -292,20 +303,39 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                             valid_pm = pm
                             break
 
-                # Skip unplayable/unmapped tracks whose streaming providers are not active
-                if not valid_pm and not is_radio:
-                    track_prov = getattr(t, "provider", None)
-                    if not track_prov or not plugin.mass.get_provider(track_prov):
-                        continue
+                # If no direct provider mapping, check if the URI provider itself has an active instance in MA
+                target_prov_inst = None
+                target_item_id = None
 
-                t_prov = valid_pm.provider_instance if valid_pm else getattr(t, "provider", provider_id)
-                t_id = getattr(valid_pm, "provider_item_id", None) or getattr(valid_pm, "item_id", None) if valid_pm else t.item_id
-                s_url = f"/stream_guest/{stream_prefix}/{t_prov}/{urllib.parse.quote(str(t_id))}"
+                if valid_pm:
+                    target_prov_inst = valid_pm.provider_instance
+                    target_item_id = getattr(valid_pm, "provider_item_id", None) or getattr(valid_pm, "item_id", None)
+                elif uri_prov_domain:
+                    # Find active provider instance matching uri domain (e.g. ytmusic_free)
+                    for p in plugin.mass.providers:
+                        if (getattr(p, "domain", None) == uri_prov_domain or getattr(p, "instance_id", None) == uri_prov_domain) and getattr(p, "available", True):
+                            target_prov_inst = p.instance_id
+                            target_item_id = uri_actual_id
+                            break
+                elif is_radio:
+                    target_prov_inst = getattr(t, "provider", provider_id)
+                    target_item_id = t.item_id
+                else:
+                    track_prov = getattr(t, "provider", None)
+                    if track_prov and track_prov not in ("builtin", "library") and plugin.mass.get_provider(track_prov):
+                        target_prov_inst = track_prov
+                        target_item_id = t.item_id
+
+                # If we cannot resolve to an active, valid streaming provider, skip this unplayable track!
+                if not target_prov_inst or not target_item_id:
+                    continue
+
+                s_url = f"/stream_guest/{stream_prefix}/{target_prov_inst}/{urllib.parse.quote(str(target_item_id))}"
                 if cache_bypass:
                     s_url += f"?v={int(time.time())}"
                 tracks_list.append({
-                    "id": str(t_id),
-                    "provider": t_prov,
+                    "id": str(target_item_id),
+                    "provider": target_prov_inst,
                     "name": t.name,
                     "artist": art_name,
                     "duration": dur,
