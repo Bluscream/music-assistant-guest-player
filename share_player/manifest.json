@@ -1,0 +1,8 @@
+{
+  "type": "plugin",
+  "domain": "share_player",
+  "name": "Guest Share Player",
+  "description": "Exposes modern standalone guest web player links for tracks, albums, and playlists with rich Discord Open Graph embeds.",
+  "codeowners": ["bluscream"],
+  "requirements": []
+}
