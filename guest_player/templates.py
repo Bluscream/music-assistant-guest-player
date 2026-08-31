@@ -495,6 +495,7 @@ def render_player_page(
         </div>
       </div>
       <div class="center-controls">
+        <button class="btn-ctrl" id="shareBtn" title="Copy Track Link"><i class="fa-solid fa-share-nodes" id="shareIcon"></i></button>
         <button class="btn-ctrl" id="prevBtn" title="Previous"><i class="fa-solid fa-backward-step"></i></button>
         <button class="btn-ctrl btn-main-play" id="playBtn" title="Play/Pause"><i class="fa-solid fa-play" id="playIcon"></i></button>
         <button class="btn-ctrl" id="nextBtn" title="Next"><i class="fa-solid fa-forward-step"></i></button>
@@ -720,6 +721,39 @@ def render_player_page(
         setTrack(currentIndex + 1, true, 0);
       }} else {{
         playIcon.className = 'fa-solid fa-play';
+      }}
+    }};
+
+    const shareBtn = document.getElementById('shareBtn');
+    const shareIcon = document.getElementById('shareIcon');
+
+    shareBtn.onclick = async () => {{
+      const currentTrack = playlist[currentIndex] || initialItem;
+      let shareUrl = currentTrack.share_url;
+      if (!shareUrl) {{
+        // Fallback to absolute single track link or current location
+        shareUrl = window.location.href.split('#')[0];
+      }}
+
+      try {{
+        if (navigator.clipboard && navigator.clipboard.writeText) {{
+          await navigator.clipboard.writeText(shareUrl);
+        }} else {{
+          const tmpInput = document.createElement('input');
+          tmpInput.value = shareUrl;
+          document.body.appendChild(tmpInput);
+          tmpInput.select();
+          document.execCommand('copy');
+          document.body.removeChild(tmpInput);
+        }}
+        shareIcon.className = 'fa-solid fa-check';
+        shareBtn.style.color = 'var(--accent)';
+        setTimeout(() => {{
+          shareIcon.className = 'fa-solid fa-share-nodes';
+          shareBtn.style.color = '';
+        }}, 2000);
+      }} catch (err) {{
+        console.error('Failed to copy share link:', err);
       }}
     }};
 
