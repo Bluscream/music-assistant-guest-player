@@ -152,25 +152,23 @@ async def handle_share_view(plugin: GuestPlayerPlugin, request: web.Request) -> 
     try:
         item = await resolve_media_item(plugin, media_type, provider_id, item_id)
     except Exception as e:
-        LOGGER.warning("Error resolving media item: %s", e)
+        LOGGER.warning("Error resolving media item %s/%s/%s: %s", media_type, provider_id, item_id, e)
         item = None
+
+    if not item:
+        raise web.HTTPFound("/")
 
     album_name = ""
     item_year = ""
-    if not item:
-        title = f"{media_type.capitalize()} on {site_name}"
-        artist_name = site_name
-        image_url = f"{base_url}/favicon.ico"
-    else:
-        title = item.name
-        artist_name = getattr(item, "artists", [None])[0].name if hasattr(item, "artists") and item.artists else ""
-        if not artist_name and hasattr(item, "artist") and item.artist:
-            artist_name = item.artist.name
-        if hasattr(item, "album") and item.album:
-            album_name = item.album.name if hasattr(item.album, "name") else str(item.album)
-        if hasattr(item, "year") and item.year:
-            item_year = item.year
-        image_url = get_image_url(plugin, item, base_url)
+    title = item.name
+    artist_name = getattr(item, "artists", [None])[0].name if hasattr(item, "artists") and item.artists else ""
+    if not artist_name and hasattr(item, "artist") and item.artist:
+        artist_name = item.artist.name
+    if hasattr(item, "album") and item.album:
+        album_name = item.album.name if hasattr(item.album, "name") else str(item.album)
+    if hasattr(item, "year") and item.year:
+        item_year = item.year
+    image_url = get_image_url(plugin, item, base_url)
 
     stream_url = f"/stream_guest/{media_type}/{provider_id}/{urllib.parse.quote(item_id)}"
     api_url = f"/api_guest/{media_type}/{provider_id}/{urllib.parse.quote(item_id)}"
