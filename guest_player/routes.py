@@ -292,14 +292,12 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                         except Exception:
                             pms = []
                     elif uri_prov_domain and uri_actual_id:
-                        # Try to resolve track via its provider mapping in library
                         try:
-                            lib_track = await plugin.mass.music.tracks.get_by_provider_mapping(
-                                provider_domain=uri_prov_domain,
-                                provider_item_id=uri_actual_id,
-                            )
-                            if lib_track and lib_track.provider_mappings:
-                                pms = list(lib_track.provider_mappings)
+                            p = plugin.mass.get_provider(uri_prov_domain)
+                            if p:
+                                lib_track = await plugin.mass.music.tracks.get_by_provider_item_id(uri_actual_id, p.instance_id)
+                                if lib_track and lib_track.provider_mappings:
+                                    pms = list(lib_track.provider_mappings)
                         except Exception:
                             pass
 
@@ -322,17 +320,12 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                     target_prov_inst = valid_pm.provider_instance
                     target_item_id = getattr(valid_pm, "provider_item_id", None) or getattr(valid_pm, "item_id", None)
                 elif uri_prov_domain:
-                    # Test active provider instances matching uri domain
+                    # Find active provider instance matching uri domain (e.g. ytmusic_free, filesystem_local)
                     for p in plugin.mass.providers:
                         if (getattr(p, "domain", None) == uri_prov_domain or getattr(p, "instance_id", None) == uri_prov_domain) and getattr(p, "available", True):
-                            try:
-                                sd = await p.get_stream_details(uri_actual_id, MediaType.TRACK)
-                                if sd:
-                                    target_prov_inst = p.instance_id
-                                    target_item_id = uri_actual_id
-                                    break
-                            except Exception:
-                                continue
+                            target_prov_inst = p.instance_id
+                            target_item_id = uri_actual_id
+                            break
                 elif is_radio:
                     target_prov_inst = getattr(t, "provider", provider_id)
                     target_item_id = t.item_id
@@ -343,7 +336,10 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                         target_item_id = t.item_id
 
                 # If we cannot resolve to an active, valid streaming provider, skip this unplayable track!
+                # Specifically exclude unconfigured/disabled external providers (such as spotify)
                 if not target_prov_inst or not target_item_id:
+                    continue
+                if uri_prov_domain and not any((getattr(p, "domain", None) == uri_prov_domain or getattr(p, "instance_id", None) == uri_prov_domain) and getattr(p, "available", True) for p in plugin.mass.providers):
                     continue
 
                 s_url = f"/stream_guest/{stream_prefix}/{target_prov_inst}/{urllib.parse.quote(str(target_item_id))}"
