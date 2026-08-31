@@ -29,11 +29,18 @@ async def stream_track_audio(
         m_type = MediaType.RADIO if media_type == "radio" else MediaType.TRACK
         stream_details = None
 
-        if "://" in item_id:
+        # Fast path: direct provider instance lookup
+        if "://" not in item_id:
+            prov = mass.get_provider(provider_id)
+            if prov and getattr(prov, "available", True):
+                try:
+                    stream_details = await prov.get_stream_details(item_id, m_type)
+                except Exception:
+                    stream_details = None
+        else:
             uri_prov, rest = item_id.split("://", 1)
             uri_parts = rest.split("/", 1)
             uri_item_id = uri_parts[1] if len(uri_parts) > 1 else uri_parts[0]
-            # Try all active provider instances matching uri_prov
             for p in mass.providers:
                 if (p.domain == uri_prov or p.instance_id == uri_prov) and getattr(p, "available", True):
                     try:
@@ -46,8 +53,6 @@ async def stream_track_audio(
                         continue
             if not stream_details:
                 prov = mass.get_provider(provider_id)
-        else:
-            prov = mass.get_provider(provider_id)
 
         if prov and not stream_details:
             try:

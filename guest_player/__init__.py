@@ -103,6 +103,12 @@ class GuestPlayerPlugin(PluginProvider):
                     name=playlist_name,
                     provider_instance_or_domain="builtin",
                 )
+            else:
+                # If playlist already contains tracks, skip re-populating on every restart
+                existing = [t async for t in self.mass.music.playlists.tracks(target_pl.item_id, target_pl.provider)]
+                if existing:
+                    self.logger.debug("Playlist '%s' already populated (%d tracks), skipping startup sync.", playlist_name, len(existing))
+                    return
 
             # Collect all library track URIs
             uris = []

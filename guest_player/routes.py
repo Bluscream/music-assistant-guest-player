@@ -74,16 +74,33 @@ def get_image_url(plugin: GuestPlayerPlugin, item: Any, base_url: str) -> str:
     return "/image_guest/builtin/placeholder"
 
 
+_IMAGE_CACHE: dict[tuple[str, str], bytes] = {}
+
+
 async def handle_image_guest(plugin: GuestPlayerPlugin, request: web.Request) -> web.Response:
-    """Serve image for guest player."""
+    """Serve image for guest player with in-memory caching."""
     parts = [p for p in request.path.split("/") if p]
     if len(parts) < 3:
         return web.Response(status=400, text="Invalid image path")
 
     provider = parts[1]
     path = urllib.parse.unquote("/".join(parts[2:]))
+    cache_key = (provider, path)
+
+    if cache_key in _IMAGE_CACHE:
+        return web.Response(
+            body=_IMAGE_CACHE[cache_key],
+            content_type="image/jpeg",
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
+
     try:
         data = await plugin.mass.metadata.get_thumbnail(path=path, provider=provider)
+        if len(_IMAGE_CACHE) > 500:
+            # Evict oldest entries
+            for _ in range(50):
+                _IMAGE_CACHE.pop(next(iter(_IMAGE_CACHE)), None)
+        _IMAGE_CACHE[cache_key] = data
         return web.Response(body=data, content_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
     except Exception as e:
         LOGGER.debug("Serving placeholder for missing guest image %s: %s", path, e)
@@ -175,6 +192,8 @@ async def handle_share_view(plugin: GuestPlayerPlugin, request: web.Request) -> 
     item_duration = item.duration if item and hasattr(item, "duration") and item.duration else 0
     page_url = f"{base_url}{request.path}"
 
+    track_count = 1 if media_type in ("track", "radio") else getattr(item, "tracks_count", getattr(item, "total_tracks", None))
+
     html_text = render_player_page(
         media_type=media_type,
         title=title,
@@ -194,6 +213,7 @@ async def handle_share_view(plugin: GuestPlayerPlugin, request: web.Request) -> 
         album_name=album_name,
         year=item_year,
         provider_name=provider_id,
+        track_count=track_count,
     )
     return web.Response(text=html_text, content_type="text/html")
 
@@ -212,6 +232,15 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
     cache_bypass = plugin.config.get_value(CONF_CACHE_BYPASS, DEFAULT_CACHE_BYPASS)
     tracks_list = []
 
+    # Pre-index active providers and domains for O(1) lookup
+    active_instances = {
+        p.instance_id: p for p in plugin.mass.providers if getattr(p, "available", True) and getattr(p, "instance_id", None)
+    }
+    active_domains = {}
+    for p in plugin.mass.providers:
+        if getattr(p, "available", True) and getattr(p, "domain", None):
+            active_domains.setdefault(p.domain, []).append(p)
+
     try:
         if media_type == "album":
             album = await plugin.mass.music.albums.get(item_id, provider_id)
@@ -223,18 +252,18 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                 valid_pm = None
                 if hasattr(t, "provider_mappings") and t.provider_mappings:
                     for pm in t.provider_mappings:
-                        if getattr(pm, "available", True) and plugin.mass.get_provider(pm.provider_instance):
+                        if getattr(pm, "available", True) and pm.provider_instance in active_instances:
                             valid_pm = pm
                             break
                     if not valid_pm:
                         for pm in t.provider_mappings:
-                            if plugin.mass.get_provider(pm.provider_instance):
+                            if pm.provider_instance in active_instances:
                                 valid_pm = pm
                                 break
 
                 if not valid_pm:
                     track_prov_inst = getattr(t, "provider", None)
-                    if not track_prov_inst or not plugin.mass.get_provider(track_prov_inst):
+                    if not track_prov_inst or track_prov_inst not in active_instances:
                         continue
 
                 t_prov = valid_pm.provider_instance if valid_pm else getattr(t, "provider", provider_id)
@@ -292,23 +321,23 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                         except Exception:
                             pms = []
                     elif uri_prov_domain and uri_actual_id:
-                        try:
-                            p = plugin.mass.get_provider(uri_prov_domain)
-                            if p:
-                                lib_track = await plugin.mass.music.tracks.get_by_provider_item_id(uri_actual_id, p.instance_id)
+                        p_matches = active_domains.get(uri_prov_domain) or ([active_instances[uri_prov_domain]] if uri_prov_domain in active_instances else [])
+                        if p_matches:
+                            try:
+                                lib_track = await plugin.mass.music.tracks.get_by_provider_item_id(uri_actual_id, p_matches[0].instance_id)
                                 if lib_track and lib_track.provider_mappings:
                                     pms = list(lib_track.provider_mappings)
-                        except Exception:
-                            pass
+                            except Exception:
+                                pass
 
                 valid_pm = None
                 for pm in pms:
-                    if getattr(pm, "available", True) and plugin.mass.get_provider(pm.provider_instance):
+                    if getattr(pm, "available", True) and pm.provider_instance in active_instances:
                         valid_pm = pm
                         break
                 if not valid_pm:
                     for pm in pms:
-                        if plugin.mass.get_provider(pm.provider_instance):
+                        if pm.provider_instance in active_instances:
                             valid_pm = pm
                             break
 
@@ -321,25 +350,26 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                     target_item_id = getattr(valid_pm, "provider_item_id", None) or getattr(valid_pm, "item_id", None)
                 elif uri_prov_domain:
                     # Find active provider instance matching uri domain (e.g. ytmusic_free, filesystem_local)
-                    for p in plugin.mass.providers:
-                        if (getattr(p, "domain", None) == uri_prov_domain or getattr(p, "instance_id", None) == uri_prov_domain) and getattr(p, "available", True):
-                            target_prov_inst = p.instance_id
-                            target_item_id = uri_actual_id
-                            break
+                    dom_provs = active_domains.get(uri_prov_domain)
+                    if dom_provs:
+                        target_prov_inst = dom_provs[0].instance_id
+                        target_item_id = uri_actual_id
+                    elif uri_prov_domain in active_instances:
+                        target_prov_inst = uri_prov_domain
+                        target_item_id = uri_actual_id
                 elif is_radio:
                     target_prov_inst = getattr(t, "provider", provider_id)
                     target_item_id = t.item_id
                 else:
                     track_prov = getattr(t, "provider", None)
-                    if track_prov and track_prov not in ("builtin", "library") and plugin.mass.get_provider(track_prov):
+                    if track_prov and track_prov not in ("builtin", "library") and track_prov in active_instances:
                         target_prov_inst = track_prov
                         target_item_id = t.item_id
 
                 # If we cannot resolve to an active, valid streaming provider, skip this unplayable track!
-                # Specifically exclude unconfigured/disabled external providers (such as spotify)
                 if not target_prov_inst or not target_item_id:
                     continue
-                if uri_prov_domain and not any((getattr(p, "domain", None) == uri_prov_domain or getattr(p, "instance_id", None) == uri_prov_domain) and getattr(p, "available", True) for p in plugin.mass.providers):
+                if uri_prov_domain and uri_prov_domain not in active_domains and uri_prov_domain not in active_instances:
                     continue
 
                 s_url = f"/stream_guest/{stream_prefix}/{target_prov_inst}/{urllib.parse.quote(str(target_item_id))}"
