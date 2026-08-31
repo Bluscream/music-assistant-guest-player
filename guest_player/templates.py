@@ -7,6 +7,52 @@ import json
 from typing import Any
 
 
+COMMON_FONTS = """  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">"""
+
+COMMON_FONTS_ICONS = f"""{COMMON_FONTS}
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">"""
+
+
+def get_base_css(theme_color: str, panel_bg: str = "rgba(28, 25, 23, 0.7)", border: str = "rgba(255, 255, 255, 0.08)") -> str:
+    """Return common theme CSS variables and global typography reset."""
+    return f"""    :root {{
+      --bg-color: #1a1714;
+      --panel-bg: {panel_bg};
+      --accent: {theme_color};
+      --text-main: #f8fafc;
+      --text-muted: #a8a29e;
+      --border: {border};
+      --btn-active: rgba(255, 255, 255, 0.12);
+    }}
+    * {{
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }}"""
+
+
+def render_svg_placeholder(theme_color: str) -> str:
+    """Render fallback SVG artwork placeholder for tracks without cover art."""
+    return (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">'
+        '<defs>'
+        '<linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">'
+        '<stop offset="0%" stop-color="#2a2523"/>'
+        '<stop offset="100%" stop-color="#141210"/>'
+        '</linearGradient>'
+        '</defs>'
+        '<rect width="500" height="500" rx="20" fill="url(#g)"/>'
+        f'<circle cx="250" cy="250" r="110" fill="none" stroke="{theme_color}" stroke-width="6" opacity="0.4"/>'
+        f'<circle cx="250" cy="250" r="40" fill="{theme_color}" opacity="0.6"/>'
+        '<path d="M225 180v140a35 35 0 1 0 25 33.5V230l60-15v75a35 35 0 1 0 25 33.5V170l-110 25z" fill="#f8fafc" opacity="0.85"/>'
+        '</svg>'
+    )
+
+
 def format_embed_line(tmpl: str, context: dict[str, Any], default_val: str = "") -> str:
     """Format an embed template string safely using context variables."""
     if not tmpl:
@@ -75,6 +121,7 @@ def render_player_page(
     full_img_url = image_url if image_url.startswith("http") else f"{page_url.split('/s/')[0]}{image_url}"
     escaped_img = html.escape(full_img_url)
     escaped_artist = html.escape(artist_name or site_name)
+    base_css = get_base_css(theme_color)
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -99,28 +146,10 @@ def render_player_page(
   <meta name="twitter:image" content="{escaped_img}">
 
   <!-- Fonts & Icons -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+{COMMON_FONTS_ICONS}
 
   <style>
-    :root {{
-      --bg-color: #1a1714;
-      --panel-bg: rgba(28, 25, 23, 0.7);
-      --accent: {theme_color};
-      --text-main: #f8fafc;
-      --text-muted: #a8a29e;
-      --border: rgba(255, 255, 255, 0.08);
-      --btn-active: rgba(255, 255, 255, 0.12);
-    }}
-    * {{
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }}
+{base_css}
     html, body {{
       width: 100%;
       height: 100%;
@@ -806,6 +835,7 @@ def render_link_generator_page(
 ) -> str:
     """Generate minimal link generator UI with only the input box."""
     escaped_site_name = html.escape(site_name)
+    base_css = get_base_css(theme_color, panel_bg="rgba(28, 25, 23, 0.85)", border="rgba(255, 255, 255, 0.1)")
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -813,24 +843,10 @@ def render_link_generator_page(
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Link Generator - {escaped_site_name}</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+{COMMON_FONTS}
 
   <style>
-    :root {{
-      --bg-color: #1a1714;
-      --accent: {theme_color};
-      --text-main: #f8fafc;
-      --border: rgba(255, 255, 255, 0.1);
-    }}
-    * {{
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }}
+{base_css}
     html, body {{
       width: 100%;
       height: 100%;

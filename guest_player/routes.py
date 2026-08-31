@@ -30,7 +30,11 @@ from .config import (
     DEFAULT_THEME_COLOR,
 )
 from .stream import stream_track_audio
-from .templates import render_link_generator_page, render_player_page
+from .templates import (
+    render_link_generator_page,
+    render_player_page,
+    render_svg_placeholder,
+)
 
 if TYPE_CHECKING:
     from . import GuestPlayerPlugin
@@ -84,20 +88,7 @@ async def handle_image_guest(plugin: GuestPlayerPlugin, request: web.Request) ->
     except Exception as e:
         LOGGER.debug("Serving placeholder for missing guest image %s: %s", path, e)
         theme_color = plugin.config.get_value(CONF_THEME_COLOR, DEFAULT_THEME_COLOR)
-        svg_placeholder = (
-            '<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">'
-            '<defs>'
-            '<linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">'
-            '<stop offset="0%" stop-color="#2a2523"/>'
-            '<stop offset="100%" stop-color="#141210"/>'
-            '</linearGradient>'
-            '</defs>'
-            '<rect width="500" height="500" rx="20" fill="url(#g)"/>'
-            f'<circle cx="250" cy="250" r="110" fill="none" stroke="{theme_color}" stroke-width="6" opacity="0.4"/>'
-            f'<circle cx="250" cy="250" r="40" fill="{theme_color}" opacity="0.6"/>'
-            '<path d="M225 180v140a35 35 0 1 0 25 33.5V230l60-15v75a35 35 0 1 0 25 33.5V170l-110 25z" fill="#f8fafc" opacity="0.85"/>'
-            '</svg>'
-        )
+        svg_placeholder = render_svg_placeholder(theme_color)
         return web.Response(text=svg_placeholder, content_type="image/svg+xml", headers={"Cache-Control": "public, max-age=86400"})
 
 
