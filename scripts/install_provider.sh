@@ -20,8 +20,8 @@
 set -eu
 
 REPO_OWNER="Bluscream"
-REPO_NAME="music-assistant-guest-share-player"
-PROVIDER_DIR="share_player"
+REPO_NAME="music-assistant-guest-player"
+PROVIDER_DIR="guest_player"
 
 REF="main"
 FORCE=0

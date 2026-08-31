@@ -1,5 +1,5 @@
 """
-Guest Share Player Plugin Provider for Music Assistant.
+Guest Player Plugin Provider for Music Assistant.
 
 Allows sharing direct playback links for Tracks, Albums, and Playlists to guests (e.g. m.minopia.de/s/track/<provider>/<item_id>)
 with rich Discord / OpenGraph embed cards and a modern web audio player with queue support.
@@ -33,11 +33,11 @@ async def setup(
     mass: MusicAssistant, manifest: ProviderManifest, config: ProviderConfig
 ) -> ProviderInstanceType:
     """Initialize provider(instance) with given configuration."""
-    return GuestSharePlayerPlugin(mass, manifest, config, SUPPORTED_FEATURES)
+    return GuestPlayerPlugin(mass, manifest, config, SUPPORTED_FEATURES)
 
 
-class GuestSharePlayerPlugin(PluginProvider):
-    """Guest Share Player plugin provider."""
+class GuestPlayerPlugin(PluginProvider):
+    """Guest Player plugin provider."""
 
     _unregister_share_route: Any
     _unregister_stream_route: Any
@@ -67,18 +67,18 @@ class GuestSharePlayerPlugin(PluginProvider):
             return web.Response(status=404, text="Not Found")
 
         self._unregister_share_route = self.mass.webserver.register_dynamic_route(
-            "/s/*", _guest_dispatcher, "*"
+            "/s/*", _guest_dispatcher, "GET"
         )
         self._unregister_stream_route = self.mass.webserver.register_dynamic_route(
-            "/stream_guest/*", _guest_dispatcher, "*"
+            "/stream_guest/*", _guest_dispatcher, "GET"
         )
         self._unregister_info_route = self.mass.webserver.register_dynamic_route(
-            "/api_guest/*", _guest_dispatcher, "*"
+            "/api_guest/*", _guest_dispatcher, "GET"
         )
         self._unregister_image_route = self.mass.webserver.register_dynamic_route(
-            "/image_guest/*", _guest_dispatcher, "*"
+            "/image_guest/*", _guest_dispatcher, "GET"
         )
-        self.logger.info("Guest Share Player routes registered: /s/*, /stream_guest/*, /api_guest/*, /image_guest/*")
+        self.logger.info("Guest Player routes registered: /s/*, /stream_guest/*, /api_guest/*, /image_guest/*")
         self.mass.loop.create_task(self._ensure_all_tracks_playlist())
 
     async def _ensure_all_tracks_playlist(self) -> None:
@@ -123,4 +123,4 @@ class GuestSharePlayerPlugin(PluginProvider):
             self._unregister_info_route()
         if self._unregister_image_route:
             self._unregister_image_route()
-        self.logger.info("Guest Share Player routes unregistered.")
+        self.logger.info("Guest Player routes unregistered.")

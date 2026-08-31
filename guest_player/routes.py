@@ -1,4 +1,4 @@
-"""Route handlers for Guest Share Player."""
+"""Route handlers for Guest Player."""
 
 from __future__ import annotations
 
@@ -33,12 +33,12 @@ from .stream import stream_track_audio
 from .templates import render_player_page
 
 if TYPE_CHECKING:
-    from . import GuestSharePlayerPlugin
+    from . import GuestPlayerPlugin
 
 LOGGER = logging.getLogger(__name__)
 
 
-def get_request_base_url(plugin: GuestSharePlayerPlugin, request: web.Request) -> str:
+def get_request_base_url(plugin: GuestPlayerPlugin, request: web.Request) -> str:
     """Resolve public base URL from config or incoming request headers dynamically."""
     configured = plugin.config.get_value(CONF_PUBLIC_BASE_URL, DEFAULT_PUBLIC_BASE_URL)
     if configured and str(configured).strip():
@@ -50,7 +50,7 @@ def get_request_base_url(plugin: GuestSharePlayerPlugin, request: web.Request) -
     return f"{proto}://{host}".rstrip("/")
 
 
-def get_image_url(plugin: GuestSharePlayerPlugin, item: Any, base_url: str) -> str:
+def get_image_url(plugin: GuestPlayerPlugin, item: Any, base_url: str) -> str:
     """Get best cover image URL for item."""
     img = None
     if hasattr(item, "image") and item.image:
@@ -70,7 +70,7 @@ def get_image_url(plugin: GuestSharePlayerPlugin, item: Any, base_url: str) -> s
     return "/image_guest/builtin/placeholder"
 
 
-async def handle_image_guest(plugin: GuestSharePlayerPlugin, request: web.Request) -> web.Response:
+async def handle_image_guest(plugin: GuestPlayerPlugin, request: web.Request) -> web.Response:
     """Serve image for guest player."""
     parts = [p for p in request.path.split("/") if p]
     if len(parts) < 3:
@@ -101,7 +101,7 @@ async def handle_image_guest(plugin: GuestSharePlayerPlugin, request: web.Reques
         return web.Response(text=svg_placeholder, content_type="image/svg+xml", headers={"Cache-Control": "public, max-age=86400"})
 
 
-async def resolve_media_item(plugin: GuestSharePlayerPlugin, media_type: str, provider_id: str, item_id: str) -> Any:
+async def resolve_media_item(plugin: GuestPlayerPlugin, media_type: str, provider_id: str, item_id: str) -> Any:
     """Fetch media item from Music Assistant."""
     media_type = media_type.lower()
     if media_type in ("track", "tracks"):
@@ -115,7 +115,7 @@ async def resolve_media_item(plugin: GuestSharePlayerPlugin, media_type: str, pr
     return None
 
 
-async def handle_share_view(plugin: GuestSharePlayerPlugin, request: web.Request) -> web.Response:
+async def handle_share_view(plugin: GuestPlayerPlugin, request: web.Request) -> web.Response:
     """Serve the modern guest player web application with Discord Embed tags."""
     parts = [p for p in request.path.split("/") if p]
     if len(parts) < 4:
@@ -185,7 +185,7 @@ async def handle_share_view(plugin: GuestSharePlayerPlugin, request: web.Request
     return web.Response(text=html_text, content_type="text/html")
 
 
-async def handle_api_info(plugin: GuestSharePlayerPlugin, request: web.Request) -> web.Response:
+async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> web.Response:
     """Return JSON payload of track(s) for the player."""
     parts = [p for p in request.path.split("/") if p]
     if len(parts) < 4:
@@ -269,7 +269,7 @@ async def handle_api_info(plugin: GuestSharePlayerPlugin, request: web.Request) 
     return web.json_response({"tracks": tracks_list}, headers={"Access-Control-Allow-Origin": "*"})
 
 
-async def handle_stream_audio(plugin: GuestSharePlayerPlugin, request: web.Request) -> web.StreamResponse:
+async def handle_stream_audio(plugin: GuestPlayerPlugin, request: web.Request) -> web.StreamResponse:
     """Stream real-time audio."""
     parts = [p for p in request.path.split("/") if p]
     if len(parts) < 4:

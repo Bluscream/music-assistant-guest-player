@@ -1,4 +1,4 @@
-"""Audio streaming and transcoding pipeline for Guest Share Player."""
+"""Audio streaming and transcoding pipeline for Guest Player."""
 
 from __future__ import annotations
 

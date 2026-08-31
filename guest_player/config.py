@@ -1,4 +1,4 @@
-"""Configuration definitions for Guest Share Player."""
+"""Configuration definitions for Guest Player."""
 
 from __future__ import annotations
 

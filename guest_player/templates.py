@@ -1,4 +1,4 @@
-"""HTML & OpenGraph embed template generator for Guest Share Player."""
+"""HTML & OpenGraph embed template generator for Guest Player."""
 
 from __future__ import annotations
 
@@ -491,7 +491,7 @@ def render_player_page(
       <div class="player-side">
         <div style="color: var(--text-muted); font-size: 0.75rem; display: flex; align-items: center; gap: 5px;">
           <i class="fa-solid fa-bolt" style="color: var(--accent); font-size: 0.7rem;"></i>
-          <span>Powered by <a href="https://music-assistant.io" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline; transition: color 0.2s ease;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'"><strong>Music Assistant</strong></a> and <a href="https://github.com/Bluscream/music-assistant-guest-share-player" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline; transition: color 0.2s ease;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'"><strong>Guest Player</strong></a></span>
+          <span>Powered by <a href="https://music-assistant.io" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline; transition: color 0.2s ease;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'"><strong>Music Assistant</strong></a> and <a href="https://github.com/Bluscream/music-assistant-guest-player" target="_blank" rel="noopener noreferrer" style="color: var(--text-muted); text-decoration: underline; transition: color 0.2s ease;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--text-muted)'"><strong>Guest Player</strong></a></span>
         </div>
       </div>
       <div class="center-controls">
