@@ -220,9 +220,25 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
             album_img = get_image_url(plugin, album, base_url)
             for t in tracks:
                 art_name = t.artists[0].name if t.artists else album.artists[0].name if album.artists else ""
-                pm = next(iter(t.provider_mappings)) if t.provider_mappings else None
-                t_prov = pm.provider_instance if pm else provider_id
-                t_id = pm.item_id if pm else t.item_id
+                valid_pm = None
+                if hasattr(t, "provider_mappings") and t.provider_mappings:
+                    for pm in t.provider_mappings:
+                        if getattr(pm, "available", True) and plugin.mass.get_provider(pm.provider_instance):
+                            valid_pm = pm
+                            break
+                    if not valid_pm:
+                        for pm in t.provider_mappings:
+                            if plugin.mass.get_provider(pm.provider_instance):
+                                valid_pm = pm
+                                break
+
+                if not valid_pm:
+                    track_prov_inst = getattr(t, "provider", None)
+                    if not track_prov_inst or not plugin.mass.get_provider(track_prov_inst):
+                        continue
+
+                t_prov = valid_pm.provider_instance if valid_pm else getattr(t, "provider", provider_id)
+                t_id = getattr(valid_pm, "provider_item_id", None) or getattr(valid_pm, "item_id", None) if valid_pm else t.item_id
                 s_url = f"/stream_guest/track/{t_prov}/{urllib.parse.quote(str(t_id))}"
                 if cache_bypass:
                     s_url += f"?v={int(time.time())}"
@@ -261,7 +277,7 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                 valid_pm = None
                 if hasattr(t, "provider_mappings") and t.provider_mappings:
                     for pm in t.provider_mappings:
-                        if pm.available and plugin.mass.get_provider(pm.provider_instance):
+                        if getattr(pm, "available", True) and plugin.mass.get_provider(pm.provider_instance):
                             valid_pm = pm
                             break
                     if not valid_pm:
@@ -270,12 +286,15 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                                 valid_pm = pm
                                 break
 
-                # Skip unplayable/unmapped tracks from external or removed providers
-                if not valid_pm and not is_radio and getattr(t, "provider", None) == "library":
-                    continue
+                # Skip unplayable/unmapped tracks from unknown or inactive providers
+                if not valid_pm and not is_radio:
+                    # If track provider instance itself is active in MA, allow it
+                    track_prov_inst = getattr(t, "provider", None)
+                    if not track_prov_inst or not plugin.mass.get_provider(track_prov_inst):
+                        continue
 
                 t_prov = valid_pm.provider_instance if valid_pm else getattr(t, "provider", provider_id)
-                t_id = valid_pm.item_id if valid_pm else t.item_id
+                t_id = getattr(valid_pm, "provider_item_id", None) or getattr(valid_pm, "item_id", None) if valid_pm else t.item_id
                 s_url = f"/stream_guest/{stream_prefix}/{t_prov}/{urllib.parse.quote(str(t_id))}"
                 if cache_bypass:
                     s_url += f"?v={int(time.time())}"
