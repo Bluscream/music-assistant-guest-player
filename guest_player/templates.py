@@ -813,10 +813,6 @@ def render_link_generator_page(
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Link Generator - {escaped_site_name}</title>
   
-  <meta property="og:title" content="Guest Player Link Generator">
-  <meta property="og:description" content="Generate guest player playback links from Music Assistant URLs.">
-  <meta name="theme-color" content="{theme_color}">
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -830,7 +826,6 @@ def render_link_generator_page(
       --text-main: #f8fafc;
       --text-muted: #a8a29e;
       --border: rgba(255, 255, 255, 0.1);
-      --btn-active: rgba(255, 255, 255, 0.15);
     }}
     * {{
       box-sizing: border-box;
@@ -853,7 +848,7 @@ def render_link_generator_page(
     .backdrop {{
       position: fixed;
       inset: -20%;
-      background: radial-gradient(circle at center, color-mix(in srgb, var(--accent) 30%, transparent) 0%, rgba(20, 18, 16, 0.95) 70%);
+      background: radial-gradient(circle at center, color-mix(in srgb, var(--accent) 25%, transparent) 0%, rgba(20, 18, 16, 0.98) 70%);
       z-index: 0;
       pointer-events: none;
     }}
@@ -861,59 +856,52 @@ def render_link_generator_page(
       position: relative;
       z-index: 1;
       width: 100%;
-      max-width: 680px;
+      max-width: 640px;
       background: var(--panel-bg);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 40px;
+      border-radius: 20px;
+      padding: 32px;
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 20px;
     }}
     .gen-header {{
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 14px;
     }}
     .gen-header i {{
-      font-size: 2rem;
+      font-size: 1.6rem;
       color: var(--accent);
       background: color-mix(in srgb, var(--accent) 15%, transparent);
-      padding: 16px;
-      border-radius: 18px;
+      padding: 14px;
+      border-radius: 14px;
       border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
     }}
     .gen-title {{
-      font-size: 1.5rem;
+      font-size: 1.35rem;
       font-weight: 700;
     }}
     .gen-sub {{
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: var(--text-muted);
-      margin-top: 4px;
+      margin-top: 3px;
     }}
     .input-group {{
       display: flex;
       flex-direction: column;
       gap: 8px;
     }}
-    .input-label {{
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }}
     .url-input {{
       width: 100%;
-      background: rgba(0, 0, 0, 0.35);
+      background: rgba(0, 0, 0, 0.4);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px 20px;
-      font-size: 1rem;
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 0.95rem;
       color: var(--text-main);
       outline: none;
       transition: all 0.2s ease;
@@ -924,14 +912,14 @@ def render_link_generator_page(
     }}
     .actions-row {{
       display: flex;
-      gap: 12px;
+      gap: 10px;
     }}
     .btn {{
       flex: 1;
-      padding: 14px 20px;
-      border-radius: 12px;
+      padding: 12px 18px;
+      border-radius: 10px;
       border: none;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 600;
       cursor: pointer;
       display: flex;
@@ -959,18 +947,18 @@ def render_link_generator_page(
     .toast {{
       font-size: 0.85rem;
       text-align: center;
-      min-height: 20px;
+      min-height: 18px;
       color: var(--accent);
       transition: opacity 0.2s ease;
     }}
     .examples-box {{
       background: rgba(0, 0, 0, 0.2);
-      border-radius: 12px;
-      padding: 16px;
+      border-radius: 10px;
+      padding: 14px;
       border: 1px solid rgba(255, 255, 255, 0.04);
     }}
     .examples-title {{
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
       color: var(--text-muted);
@@ -979,11 +967,11 @@ def render_link_generator_page(
     }}
     .example-tag {{
       display: inline-block;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       color: var(--text-muted);
       background: rgba(255, 255, 255, 0.05);
-      padding: 4px 10px;
-      border-radius: 8px;
+      padding: 4px 8px;
+      border-radius: 6px;
       margin-right: 6px;
       margin-bottom: 6px;
       cursor: pointer;
@@ -1004,12 +992,11 @@ def render_link_generator_page(
       <i class="fa-solid fa-link"></i>
       <div>
         <div class="gen-title">Guest Player Link Generator</div>
-        <div class="gen-sub">Paste any Music Assistant internal URL to instantly convert it into a guest player link</div>
+        <div class="gen-sub">Paste any Music Assistant internal URL to convert it into a guest player link</div>
       </div>
     </div>
 
     <div class="input-group">
-      <label class="input-label" for="urlInput">Music Assistant or Guest URL</label>
       <input type="text" class="url-input" id="urlInput" placeholder="https://music.example.com/#/tracks/library/2424" autocomplete="off" spellcheck="false">
     </div>
 
@@ -1043,20 +1030,24 @@ def render_link_generator_page(
       if (!val) return '';
 
       // Pattern 1: MA Hash URL e.g. https://.../#/tracks/library/223 or /#/albums/ytmusic/123
-      const hashMatch = val.match(/#\/?(tracks|albums|playlists|artists|track|album|playlist|artist)\/([^\/]+)\/(.+)$/i);
+      const hashMatch = val.match(/#\\/?(tracks|albums|playlists|artists|track|album|playlist|artist)\\/(.+)$/i);
       if (hashMatch) {{
+        let rest = hashMatch[2];
+        let parts = rest.split('/');
         let type = hashMatch[1].toLowerCase().replace(/s$/, '');
-        const prov = hashMatch[2];
-        const id = hashMatch[3];
+        let prov = parts[0];
+        let id = parts.slice(1).join('/');
         return `${{BASE_URL}}/s/${{type}}/${{prov}}/${{id}}`;
       }}
 
       // Pattern 2: MA Direct Path without hash e.g. /tracks/library/223
-      const pathMatch = val.match(/\b(tracks|albums|playlists|artists|track|album|playlist|artist)\/([^\/]+)\/(.+)$/i);
+      const pathMatch = val.match(/\\b(tracks|albums|playlists|artists|track|album|playlist|artist)\\/(.+)$/i);
       if (pathMatch && !val.includes('/s/')) {{
+        let rest = pathMatch[2];
+        let parts = rest.split('/');
         let type = pathMatch[1].toLowerCase().replace(/s$/, '');
-        const prov = pathMatch[2];
-        const id = pathMatch[3];
+        let prov = parts[0];
+        let id = parts.slice(1).join('/');
         return `${{BASE_URL}}/s/${{type}}/${{prov}}/${{id}}`;
       }}
 

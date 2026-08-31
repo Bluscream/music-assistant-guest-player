@@ -132,7 +132,7 @@ async def handle_share_view(plugin: GuestPlayerPlugin, request: web.Request) -> 
         return web.Response(text=html_text, content_type="text/html")
 
     if len(parts) < 4:
-        return web.Response(text="Invalid share link format. Expected /s/<track|album|playlist>/<provider>/<id>", status=400)
+        raise web.HTTPFound("/")
 
     media_type = parts[1].lower().rstrip("s")
     provider_id = parts[2]
