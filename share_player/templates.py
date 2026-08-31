@@ -28,6 +28,7 @@ def render_player_page(
     site_name: str,
     theme_color: str,
     duration: int = 0,
+    autoplay: bool = False,
     author_template: str = "{site_name}",
     title_template: str = "{title}",
     desc_template: str = "🎵 {media_type_label} by {artist}{duration_str}",
@@ -547,6 +548,8 @@ def render_player_page(
       return `${{m}}:${{s < 10 ? '0' : ''}}${{s}}`;
     }}
 
+    const AUTO_PLAY = {json.dumps(autoplay)};
+
     function getTrackDuration() {{
       const currentTrack = playlist[currentIndex];
       if (currentTrack && currentTrack.duration && isFinite(currentTrack.duration)) {{
@@ -558,6 +561,26 @@ def render_player_page(
       return 0;
     }}
 
+    function getInitialTrackIndex() {{
+      const hash = window.location.hash.replace(/^#/, '').trim();
+      if (!hash) return 0;
+
+      // Check numeric 1-based or 0-based index
+      const num = parseInt(hash, 10);
+      if (!isNaN(num)) {{
+        if (num >= 1 && num <= playlist.length) return num - 1;
+        if (num >= 0 && num < playlist.length) return num;
+      }}
+
+      // Check match by track ID or name
+      const lowerHash = decodeURIComponent(hash).toLowerCase();
+      const matchIdx = playlist.findIndex(t => 
+        (t.id && String(t.id).toLowerCase() === lowerHash) ||
+        (t.name && t.name.toLowerCase() === lowerHash)
+      );
+      return matchIdx !== -1 ? matchIdx : 0;
+    }}
+
     async function loadData() {{
       try {{
         const res = await fetch('{api_url}');
@@ -566,20 +589,29 @@ def render_player_page(
           playlist = data.tracks;
           trackCountEl.textContent = `${{playlist.length}}`;
           renderTracklist();
-          setTrack(0, false);
+          const targetIndex = getInitialTrackIndex();
+          setTrack(targetIndex, AUTO_PLAY);
         }} else {{
           playlist = [initialItem];
           trackCountEl.textContent = '1';
           renderTracklist();
-          setTrack(0, false);
+          setTrack(0, AUTO_PLAY);
         }}
       }} catch (e) {{
         playlist = [initialItem];
         trackCountEl.textContent = '1';
         renderTracklist();
-        setTrack(0, false);
+        setTrack(0, AUTO_PLAY);
       }}
     }}
+
+    // Handle browser back/forward or manual hash change
+    window.addEventListener('hashchange', () => {{
+      const targetIndex = getInitialTrackIndex();
+      if (targetIndex !== currentIndex) {{
+        setTrack(targetIndex, !audio.paused);
+      }}
+    }});
 
     function renderTracklist() {{
       trackListEl.innerHTML = '';
@@ -619,6 +651,12 @@ def render_player_page(
       audio.src = streamUrl;
       audio.load();
 
+      // Update URL hash without polluting browser history
+      if (playlist.length > 1) {{
+        const trackRef = track.id || (index + 1);
+        history.replaceState(null, '', `#${{trackRef}}`);
+      }}
+
       const dur = getTrackDuration();
       durationEl.textContent = formatTime(dur);
       const startPct = dur > 0 ? Math.min(100, Math.max(0, (offsetSeconds / dur) * 100)) : 0;
@@ -635,7 +673,7 @@ def render_player_page(
       }}
 
       if (playImmediately) {{
-        audio.play().catch(e => console.log('Autoplay prevent:', e));
+        audio.play().catch(e => console.log('Autoplay prevented by browser:', e));
       }}
     }}
 

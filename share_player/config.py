@@ -12,6 +12,7 @@ CONF_PUBLIC_BASE_URL = "public_base_url"
 CONF_SITE_NAME = "site_name"
 CONF_THEME_COLOR = "theme_color"
 CONF_CACHE_BYPASS = "cache_bypass"
+CONF_AUTOPLAY = "autoplay"
 CONF_EMBED_AUTHOR_TEMPLATE = "embed_author_template"
 CONF_EMBED_TITLE_TEMPLATE = "embed_title_template"
 CONF_EMBED_DESC_TEMPLATE = "embed_desc_template"
@@ -21,6 +22,7 @@ DEFAULT_PUBLIC_BASE_URL = ""
 DEFAULT_SITE_NAME = "Music Assistant"
 DEFAULT_THEME_COLOR = "#3080ff"
 DEFAULT_CACHE_BYPASS = True
+DEFAULT_AUTOPLAY = False
 DEFAULT_EMBED_AUTHOR_TEMPLATE = "{site_name}"
 DEFAULT_EMBED_TITLE_TEMPLATE = "{title}"
 DEFAULT_EMBED_DESC_TEMPLATE = "🎵 {media_type_label} by {artist}{duration_str}"
@@ -67,6 +69,14 @@ async def get_config_entries(
             label="Enable CDN / Browser Cache Bypass",
             default_value=DEFAULT_CACHE_BYPASS,
             description="Appends anti-caching query parameters and strict no-store headers to audio stream requests to prevent Cloudflare and CDNs from caching audio or error responses.",
+            required=False,
+        ),
+        ConfigEntry(
+            key=CONF_AUTOPLAY,
+            type=ConfigEntryType.BOOLEAN,
+            label="Autoplay on Page Load",
+            default_value=DEFAULT_AUTOPLAY,
+            description="Automatically begin audio playback as soon as the web player loads (subject to browser autoplay policies).",
             required=False,
         ),
         ConfigEntry(

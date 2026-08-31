@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from aiohttp import web
 
 from .config import (
+    CONF_AUTOPLAY,
     CONF_CACHE_BYPASS,
     CONF_EMBED_AUTHOR_TEMPLATE,
     CONF_EMBED_DESC_TEMPLATE,
@@ -18,6 +19,7 @@ from .config import (
     CONF_PUBLIC_BASE_URL,
     CONF_SITE_NAME,
     CONF_THEME_COLOR,
+    DEFAULT_AUTOPLAY,
     DEFAULT_CACHE_BYPASS,
     DEFAULT_EMBED_AUTHOR_TEMPLATE,
     DEFAULT_EMBED_DESC_TEMPLATE,
@@ -126,6 +128,7 @@ async def handle_share_view(plugin: GuestSharePlayerPlugin, request: web.Request
     base_url = get_request_base_url(plugin, request)
     site_name = plugin.config.get_value(CONF_SITE_NAME, DEFAULT_SITE_NAME)
     theme_color = plugin.config.get_value(CONF_THEME_COLOR, DEFAULT_THEME_COLOR)
+    autoplay = plugin.config.get_value(CONF_AUTOPLAY, DEFAULT_AUTOPLAY)
     author_template = plugin.config.get_value(CONF_EMBED_AUTHOR_TEMPLATE, DEFAULT_EMBED_AUTHOR_TEMPLATE)
     title_template = plugin.config.get_value(CONF_EMBED_TITLE_TEMPLATE, DEFAULT_EMBED_TITLE_TEMPLATE)
     desc_template = plugin.config.get_value(CONF_EMBED_DESC_TEMPLATE, DEFAULT_EMBED_DESC_TEMPLATE)
@@ -170,6 +173,7 @@ async def handle_share_view(plugin: GuestSharePlayerPlugin, request: web.Request
         site_name=site_name,
         theme_color=theme_color,
         duration=item_duration,
+        autoplay=autoplay,
         author_template=author_template,
         title_template=title_template,
         desc_template=desc_template,
@@ -210,6 +214,8 @@ async def handle_api_info(plugin: GuestSharePlayerPlugin, request: web.Request) 
                 if cache_bypass:
                     s_url += f"?v={int(time.time())}"
                 tracks_list.append({
+                    "id": str(t_id),
+                    "provider": t_prov,
                     "name": t.name,
                     "artist": art_name,
                     "duration": t.duration,
@@ -230,6 +236,8 @@ async def handle_api_info(plugin: GuestSharePlayerPlugin, request: web.Request) 
                 if cache_bypass:
                     s_url += f"?v={int(time.time())}"
                 tracks_list.append({
+                    "id": str(t_id),
+                    "provider": t_prov,
                     "name": t.name,
                     "artist": art_name,
                     "duration": t.duration,
@@ -246,6 +254,8 @@ async def handle_api_info(plugin: GuestSharePlayerPlugin, request: web.Request) 
             if cache_bypass:
                 s_url += f"?v={int(time.time())}"
             tracks_list.append({
+                "id": str(t_id),
+                "provider": t_prov,
                 "name": track.name,
                 "artist": art_name,
                 "duration": track.duration,
