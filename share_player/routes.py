@@ -126,6 +126,7 @@ async def handle_share_view(plugin: GuestSharePlayerPlugin, request: web.Request
 
     stream_url = f"/stream_guest/{media_type}/{provider_id}/{urllib.parse.quote(item_id)}"
     api_url = f"/api_guest/{media_type}/{provider_id}/{urllib.parse.quote(item_id)}"
+    item_duration = item.duration if item and hasattr(item, "duration") and item.duration else 0
     page_url = f"{base_url}{request.path}"
 
     html_text = render_player_page(
@@ -138,6 +139,7 @@ async def handle_share_view(plugin: GuestSharePlayerPlugin, request: web.Request
         page_url=page_url,
         site_name=site_name,
         theme_color=theme_color,
+        duration=item_duration,
     )
     return web.Response(text=html_text, content_type="text/html")
 

@@ -17,17 +17,31 @@ def render_player_page(
     page_url: str,
     site_name: str,
     theme_color: str,
+    duration: int = 0,
 ) -> str:
     """Generate modern full-width Music Assistant styled player matching the official UI."""
-    escaped_title = html.escape(title)
-    if artist_name:
-        description = f"by {artist_name} • Stream on {site_name}"
+    # Build rich, beautiful Discord description
+    if media_type == "track":
+        dur_str = f" • {duration // 60}:{duration % 60:02d}" if duration else ""
+        if artist_name:
+            description = f"🎵 Track by **{artist_name}**{dur_str}\n▶️ Click above to play live"
+        else:
+            description = f"🎵 Track{dur_str}\n▶️ Click above to play live"
+    elif media_type == "playlist":
+        description = f"📋 Playlist • Stream on {site_name}\n▶️ Click above to open and listen"
+    elif media_type == "album":
+        if artist_name:
+            description = f"💿 Album by **{artist_name}**\n▶️ Click above to listen"
+        else:
+            description = f"💿 Album • Stream on {site_name}\n▶️ Click above to listen"
     else:
-        description = f"Listen to {title} on {site_name}"
+        description = f"Listen on {site_name}"
 
     escaped_desc = html.escape(description)
     escaped_site_name = html.escape(site_name)
-    escaped_img = html.escape(image_url)
+    # Ensure image_url is absolute so Discord proxy can fetch it
+    full_img_url = image_url if image_url.startswith("http") else f"{page_url.split('/s/')[0]}{image_url}"
+    escaped_img = html.escape(full_img_url)
     escaped_artist = html.escape(artist_name or site_name)
 
     return f"""<!DOCTYPE html>
@@ -43,13 +57,11 @@ def render_player_page(
   <meta property="og:title" content="{escaped_title}">
   <meta property="og:description" content="{escaped_desc}">
   <meta property="og:image" content="{escaped_img}">
-  <meta property="og:image:width" content="600">
-  <meta property="og:image:height" content="600">
   <meta property="og:url" content="{page_url}">
   <meta name="theme-color" content="{theme_color}">
 
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image">
+  <!-- Twitter Card: 'summary' forces Discord to display compact right-side thumbnail instead of huge stretched box -->
+  <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="{escaped_title}">
   <meta name="twitter:description" content="{escaped_desc}">
   <meta name="twitter:image" content="{escaped_img}">
