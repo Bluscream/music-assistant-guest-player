@@ -168,7 +168,9 @@ shareBtn.onclick=async()=>{{const t=playlist[currentIndex]||initialItem;let url=
 prevBtn.onclick=()=>{{if(isLiveStream())return;const cur=seekOffset+(isFinite(audio.currentTime)?audio.currentTime:0);if(cur>3)setTrack(currentIndex,!audio.paused,0);else if(currentIndex>0)setTrack(currentIndex-1,true,0);}};
 nextBtn.onclick=()=>{{if(currentIndex+1<playlist.length)setTrack(currentIndex+1,true,0);}};
 loopBtn.onclick=()=>{{isLooping=!isLooping;loopBtn.style.color=isLooping?'var(--accent)':'var(--text-muted)';}};
-volSlider.oninput=e=>{{audio.volume=e.target.value;}};
+const savedVol=localStorage.getItem('guest_player_vol');
+if(savedVol!==null){{const v=parseFloat(savedVol);if(!isNaN(v)&&v>=0&&v<=1){{volSlider.value=v;audio.volume=v;}}}}else{{audio.volume=parseFloat(volSlider.value)||1;}}
+volSlider.oninput=e=>{{const v=parseFloat(e.target.value);audio.volume=v;localStorage.setItem('guest_player_vol',v);}};
 progressContainer.onclick=e=>{{if(isLiveStream())return;const dur=getTrackDuration();if(!dur||dur<=0)return;const rect=progressContainer.getBoundingClientRect(),pos=Math.min(1,Math.max(0,(e.clientX-rect.left)/rect.width));setTrack(currentIndex,!audio.paused,pos*dur);}};
 loadData();
 </script></body></html>"""
