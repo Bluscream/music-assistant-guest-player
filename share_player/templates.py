@@ -19,18 +19,18 @@ def render_player_page(
     duration: int = 0,
 ) -> str:
     """Generate modern full-width Music Assistant styled player matching the official UI."""
-    # Build rich, beautiful Discord description
+    # Build clean Discord description (meta tags do not parse markdown like **)
     if media_type == "track":
         dur_str = f" • {duration // 60}:{duration % 60:02d}" if duration else ""
         if artist_name:
-            description = f"🎵 Track by **{artist_name}**{dur_str}\n▶️ Click above to play live"
+            description = f"🎵 Track by {artist_name}{dur_str}\n▶️ Click above to play live"
         else:
             description = f"🎵 Track{dur_str}\n▶️ Click above to play live"
     elif media_type == "playlist":
         description = f"📋 Playlist • Stream on {site_name}\n▶️ Click above to open and listen"
     elif media_type == "album":
         if artist_name:
-            description = f"💿 Album by **{artist_name}**\n▶️ Click above to listen"
+            description = f"💿 Album by {artist_name}\n▶️ Click above to listen"
         else:
             description = f"💿 Album • Stream on {site_name}\n▶️ Click above to listen"
     else:
