@@ -61,6 +61,7 @@ async def handle_image_guest(plugin: GuestSharePlayerPlugin, request: web.Reques
         return web.Response(body=data, content_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
     except Exception as e:
         LOGGER.debug("Serving placeholder for missing guest image %s: %s", path, e)
+        theme_color = plugin.config.get_value(CONF_THEME_COLOR, DEFAULT_THEME_COLOR)
         svg_placeholder = (
             '<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">'
             '<defs>'
@@ -70,8 +71,8 @@ async def handle_image_guest(plugin: GuestSharePlayerPlugin, request: web.Reques
             '</linearGradient>'
             '</defs>'
             '<rect width="500" height="500" rx="20" fill="url(#g)"/>'
-            '<circle cx="250" cy="250" r="110" fill="none" stroke="#ff3366" stroke-width="6" opacity="0.4"/>'
-            '<circle cx="250" cy="250" r="40" fill="#ff3366" opacity="0.6"/>'
+            f'<circle cx="250" cy="250" r="110" fill="none" stroke="{theme_color}" stroke-width="6" opacity="0.4"/>'
+            f'<circle cx="250" cy="250" r="40" fill="{theme_color}" opacity="0.6"/>'
             '<path d="M225 180v140a35 35 0 1 0 25 33.5V230l60-15v75a35 35 0 1 0 25 33.5V170l-110 25z" fill="#f8fafc" opacity="0.85"/>'
             '</svg>'
         )

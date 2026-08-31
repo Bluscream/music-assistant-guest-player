@@ -233,8 +233,8 @@ def render_player_page(
       background: rgba(255, 255, 255, 0.06);
     }}
     .track-row.active {{
-      background: rgba(255, 51, 102, 0.15);
-      border: 1px solid rgba(255, 51, 102, 0.3);
+      background: color-mix(in srgb, var(--accent) 15%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
     }}
     .track-row-art {{
       width: 44px;
