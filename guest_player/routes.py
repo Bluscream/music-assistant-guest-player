@@ -291,6 +291,17 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                             pms = await plugin.mass.music.tracks.get_provider_mappings(t.item_id, "library")
                         except Exception:
                             pms = []
+                    elif uri_prov_domain and uri_actual_id:
+                        # Try to resolve track via its provider mapping in library
+                        try:
+                            lib_track = await plugin.mass.music.tracks.get_by_provider_mapping(
+                                provider_domain=uri_prov_domain,
+                                provider_item_id=uri_actual_id,
+                            )
+                            if lib_track and lib_track.provider_mappings:
+                                pms = list(lib_track.provider_mappings)
+                        except Exception:
+                            pass
 
                 valid_pm = None
                 for pm in pms:
@@ -303,7 +314,7 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                             valid_pm = pm
                             break
 
-                # If no direct provider mapping, check if the URI provider itself has an active instance in MA
+                # If no direct provider mapping, check matching active instances in MA
                 target_prov_inst = None
                 target_item_id = None
 
@@ -311,12 +322,17 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                     target_prov_inst = valid_pm.provider_instance
                     target_item_id = getattr(valid_pm, "provider_item_id", None) or getattr(valid_pm, "item_id", None)
                 elif uri_prov_domain:
-                    # Find active provider instance matching uri domain (e.g. ytmusic_free)
+                    # Test active provider instances matching uri domain
                     for p in plugin.mass.providers:
                         if (getattr(p, "domain", None) == uri_prov_domain or getattr(p, "instance_id", None) == uri_prov_domain) and getattr(p, "available", True):
-                            target_prov_inst = p.instance_id
-                            target_item_id = uri_actual_id
-                            break
+                            try:
+                                sd = await p.get_stream_details(uri_actual_id, MediaType.TRACK)
+                                if sd:
+                                    target_prov_inst = p.instance_id
+                                    target_item_id = uri_actual_id
+                                    break
+                            except Exception:
+                                continue
                 elif is_radio:
                     target_prov_inst = getattr(t, "provider", provider_id)
                     target_item_id = t.item_id
