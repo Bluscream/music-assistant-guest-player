@@ -274,23 +274,28 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                         art_name = ""
 
                 # Pick an active streaming provider mapping if available
+                pms = list(t.provider_mappings) if hasattr(t, "provider_mappings") and t.provider_mappings else []
+                if not pms and not is_radio and hasattr(t, "item_id") and getattr(t, "provider", None) == "library":
+                    try:
+                        pms = await plugin.mass.music.tracks.get_provider_mappings(t.item_id, "library")
+                    except Exception:
+                        pms = []
+
                 valid_pm = None
-                if hasattr(t, "provider_mappings") and t.provider_mappings:
-                    for pm in t.provider_mappings:
-                        if getattr(pm, "available", True) and plugin.mass.get_provider(pm.provider_instance):
+                for pm in pms:
+                    if getattr(pm, "available", True) and plugin.mass.get_provider(pm.provider_instance):
+                        valid_pm = pm
+                        break
+                if not valid_pm:
+                    for pm in pms:
+                        if plugin.mass.get_provider(pm.provider_instance):
                             valid_pm = pm
                             break
-                    if not valid_pm:
-                        for pm in t.provider_mappings:
-                            if plugin.mass.get_provider(pm.provider_instance):
-                                valid_pm = pm
-                                break
 
-                # Skip unplayable/unmapped tracks from unknown or inactive providers
+                # Skip unplayable/unmapped tracks whose streaming providers are not active
                 if not valid_pm and not is_radio:
-                    # If track provider instance itself is active in MA, allow it
-                    track_prov_inst = getattr(t, "provider", None)
-                    if not track_prov_inst or not plugin.mass.get_provider(track_prov_inst):
+                    track_prov = getattr(t, "provider", None)
+                    if not track_prov or not plugin.mass.get_provider(track_prov):
                         continue
 
                 t_prov = valid_pm.provider_instance if valid_pm else getattr(t, "provider", provider_id)
