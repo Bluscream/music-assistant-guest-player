@@ -30,7 +30,7 @@ from .config import (
     DEFAULT_THEME_COLOR,
 )
 from .stream import stream_track_audio
-from .templates import render_player_page
+from .templates import render_link_generator_page, render_player_page
 
 if TYPE_CHECKING:
     from . import GuestPlayerPlugin
@@ -116,18 +116,27 @@ async def resolve_media_item(plugin: GuestPlayerPlugin, media_type: str, provide
 
 
 async def handle_share_view(plugin: GuestPlayerPlugin, request: web.Request) -> web.Response:
-    """Serve the modern guest player web application with Discord Embed tags."""
+    """Serve the modern guest player web application with Discord Embed tags, or link generator at /s."""
     parts = [p for p in request.path.split("/") if p]
+    base_url = get_request_base_url(plugin, request)
+    site_name = plugin.config.get_value(CONF_SITE_NAME, DEFAULT_SITE_NAME)
+    theme_color = plugin.config.get_value(CONF_THEME_COLOR, DEFAULT_THEME_COLOR)
+
+    # If visiting /s or /s/, show the link generator tool
+    if len(parts) <= 1:
+        html_text = render_link_generator_page(
+            site_name=site_name,
+            theme_color=theme_color,
+            base_url=base_url,
+        )
+        return web.Response(text=html_text, content_type="text/html")
+
     if len(parts) < 4:
         return web.Response(text="Invalid share link format. Expected /s/<track|album|playlist>/<provider>/<id>", status=400)
 
     media_type = parts[1].lower().rstrip("s")
     provider_id = parts[2]
     item_id = "/".join(parts[3:])
-
-    base_url = get_request_base_url(plugin, request)
-    site_name = plugin.config.get_value(CONF_SITE_NAME, DEFAULT_SITE_NAME)
-    theme_color = plugin.config.get_value(CONF_THEME_COLOR, DEFAULT_THEME_COLOR)
     autoplay = plugin.config.get_value(CONF_AUTOPLAY, DEFAULT_AUTOPLAY)
     author_template = plugin.config.get_value(CONF_EMBED_AUTHOR_TEMPLATE, DEFAULT_EMBED_AUTHOR_TEMPLATE)
     title_template = plugin.config.get_value(CONF_EMBED_TITLE_TEMPLATE, DEFAULT_EMBED_TITLE_TEMPLATE)

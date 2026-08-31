@@ -62,7 +62,7 @@ class GuestPlayerPlugin(PluginProvider):
                 return await handle_api_info(self, request)
             elif path.startswith("/image_guest/"):
                 return await handle_image_guest(self, request)
-            elif path.startswith("/s/"):
+            elif path == "/s" or path.startswith("/s/"):
                 return await handle_share_view(self, request)
             return web.Response(status=404, text="Not Found")
 
