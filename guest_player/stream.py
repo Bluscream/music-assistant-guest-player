@@ -45,11 +45,27 @@ async def stream_track_audio(
             if not item:
                 return web.Response(text="Item not found", status=404)
 
-            pm = next(iter(item.provider_mappings)) if item.provider_mappings else None
-            target_instance = pm.provider_instance if pm else provider_id
-            target_item_id = pm.item_id if pm else item_id
+            valid_pm = None
+            if item.provider_mappings:
+                for pm in item.provider_mappings:
+                    if pm.available and mass.get_provider(pm.provider_instance):
+                        valid_pm = pm
+                        break
+                if not valid_pm:
+                    for pm in item.provider_mappings:
+                        if mass.get_provider(pm.provider_instance):
+                            valid_pm = pm
+                            break
+
+            if not valid_pm:
+                return web.Response(text="No playable streaming provider found for item", status=404)
+
+            target_instance = valid_pm.provider_instance
+            target_item_id = valid_pm.item_id
 
             prov = mass.get_provider(target_instance)
+            if not prov:
+                return web.Response(text=f"Provider {target_instance} not found", status=404)
             stream_details = await prov.get_stream_details(target_item_id, m_type)
 
         offset = 0

@@ -257,9 +257,25 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                     else:
                         art_name = ""
 
-                pm = next(iter(t.provider_mappings)) if hasattr(t, "provider_mappings") and t.provider_mappings else None
-                t_prov = pm.provider_instance if pm else provider_id
-                t_id = pm.item_id if pm else t.item_id
+                # Pick an active streaming provider mapping if available
+                valid_pm = None
+                if hasattr(t, "provider_mappings") and t.provider_mappings:
+                    for pm in t.provider_mappings:
+                        if pm.available and plugin.mass.get_provider(pm.provider_instance):
+                            valid_pm = pm
+                            break
+                    if not valid_pm:
+                        for pm in t.provider_mappings:
+                            if plugin.mass.get_provider(pm.provider_instance):
+                                valid_pm = pm
+                                break
+
+                # Skip unplayable/unmapped tracks from external or removed providers
+                if not valid_pm and not is_radio and getattr(t, "provider", None) == "library":
+                    continue
+
+                t_prov = valid_pm.provider_instance if valid_pm else getattr(t, "provider", provider_id)
+                t_id = valid_pm.item_id if valid_pm else t.item_id
                 s_url = f"/stream_guest/{stream_prefix}/{t_prov}/{urllib.parse.quote(str(t_id))}"
                 if cache_bypass:
                     s_url += f"?v={int(time.time())}"
