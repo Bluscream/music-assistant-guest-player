@@ -70,6 +70,15 @@ Once installed and enabled in **Settings ➔ Providers ➔ Guest Player**:
 
 ---
 
+## Support Disclaimer
+
+> [!NOTE]
+> This provider is maintained solely for personal use and is actively supported only as long as I personally use [Music Assistant](https://music-assistant.io).
+> 
+> If you are unhappy with reaction times, issue resolution, or feature prioritization, you are welcome and encouraged to fork this repository and continue development.
+
+---
+
 ## License
 
-MIT License. Powered by [Music Assistant](https://music-assistant.io).
+This project is released into the public domain under [The Unlicense](LICENSE). Powered by [Music Assistant](https://music-assistant.io).
