@@ -17,6 +17,21 @@ Generate beautiful, embeddable guest share links for any track, album, or playli
 
 ---
 
+## Screenshots
+
+<details>
+<summary>📸 Click to expand screenshots</summary>
+
+<br>
+
+| Desktop Guest Player (Now Playing & Queue) |
+|:---:|
+| [![Guest Share Player Interface](https://i.imgur.com/5QRK3ba.png)](https://i.imgur.com/5QRK3ba.png) |
+
+</details>
+
+---
+
 ## Installation
 
 ### Unraid / NAS (Docker)
