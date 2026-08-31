@@ -67,21 +67,24 @@ class GuestPlayerPlugin(PluginProvider):
             return web.Response(status=404, text="Not Found")
 
         self._unregister_share_route = self.mass.webserver.register_dynamic_route(
-            "/s/*", _guest_dispatcher, "GET"
+            "/s/*", _guest_dispatcher, "*"
         )
         self._unregister_s_exact = self.mass.webserver.register_dynamic_route(
-            "/s", _guest_dispatcher, "GET"
+            "/s", _guest_dispatcher, "*"
+        )
+        self._unregister_s_slash = self.mass.webserver.register_dynamic_route(
+            "/s/", _guest_dispatcher, "*"
         )
         self._unregister_stream_route = self.mass.webserver.register_dynamic_route(
-            "/stream_guest/*", _guest_dispatcher, "GET"
+            "/stream_guest/*", _guest_dispatcher, "*"
         )
         self._unregister_info_route = self.mass.webserver.register_dynamic_route(
-            "/api_guest/*", _guest_dispatcher, "GET"
+            "/api_guest/*", _guest_dispatcher, "*"
         )
         self._unregister_image_route = self.mass.webserver.register_dynamic_route(
-            "/image_guest/*", _guest_dispatcher, "GET"
+            "/image_guest/*", _guest_dispatcher, "*"
         )
-        self.logger.info("Guest Player routes registered: /s/*, /stream_guest/*, /api_guest/*, /image_guest/*")
+        self.logger.info("Guest Player routes registered: /s/*, /s, /s/, /stream_guest/*, /api_guest/*, /image_guest/*")
         self.mass.loop.create_task(self._ensure_all_tracks_playlist())
 
     async def _ensure_all_tracks_playlist(self) -> None:
@@ -118,12 +121,16 @@ class GuestPlayerPlugin(PluginProvider):
 
     async def unload(self, is_removed: bool = False) -> None:
         """Handle unload/close of the provider."""
-        if self._unregister_share_route:
+        if hasattr(self, "_unregister_share_route") and self._unregister_share_route:
             self._unregister_share_route()
-        if self._unregister_stream_route:
+        if hasattr(self, "_unregister_s_exact") and self._unregister_s_exact:
+            self._unregister_s_exact()
+        if hasattr(self, "_unregister_s_slash") and self._unregister_s_slash:
+            self._unregister_s_slash()
+        if hasattr(self, "_unregister_stream_route") and self._unregister_stream_route:
             self._unregister_stream_route()
-        if self._unregister_info_route:
+        if hasattr(self, "_unregister_info_route") and self._unregister_info_route:
             self._unregister_info_route()
-        if self._unregister_image_route:
+        if hasattr(self, "_unregister_image_route") and self._unregister_image_route:
             self._unregister_image_route()
         self.logger.info("Guest Player routes unregistered.")
