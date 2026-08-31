@@ -470,8 +470,8 @@ def render_player_page(
 
     <div class="tracklist-panel" id="tracklistPanel">
       <div class="tracklist-header">
-        <span>Tracks / Queue</span>
-        <span id="trackCount">0 tracks</span>
+        <span>Tracks</span>
+        <span id="trackCount">0</span>
       </div>
       <div class="tracklist-scroll" id="trackList"></div>
     </div>
@@ -564,18 +564,18 @@ def render_player_page(
         const data = await res.json();
         if (data.tracks && data.tracks.length > 0) {{
           playlist = data.tracks;
-          trackCountEl.textContent = `${{playlist.length}} track${{playlist.length === 1 ? '' : 's'}}`;
+          trackCountEl.textContent = `${{playlist.length}}`;
           renderTracklist();
           setTrack(0, false);
         }} else {{
           playlist = [initialItem];
-          trackCountEl.textContent = '1 track';
+          trackCountEl.textContent = '1';
           renderTracklist();
           setTrack(0, false);
         }}
       }} catch (e) {{
         playlist = [initialItem];
-        trackCountEl.textContent = '1 track';
+        trackCountEl.textContent = '1';
         renderTracklist();
         setTrack(0, false);
       }}
