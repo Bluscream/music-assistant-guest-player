@@ -36,6 +36,18 @@ if TYPE_CHECKING:
 LOGGER = logging.getLogger(__name__)
 
 
+def get_request_base_url(plugin: GuestSharePlayerPlugin, request: web.Request) -> str:
+    """Resolve public base URL from config or incoming request headers dynamically."""
+    configured = plugin.config.get_value(CONF_PUBLIC_BASE_URL, DEFAULT_PUBLIC_BASE_URL)
+    if configured and str(configured).strip():
+        return str(configured).strip().rstrip("/")
+
+    # Dynamic auto-detection via standard reverse-proxy headers
+    proto = request.headers.get("X-Forwarded-Proto", request.scheme or "http")
+    host = request.headers.get("X-Forwarded-Host", request.host)
+    return f"{proto}://{host}".rstrip("/")
+
+
 def get_image_url(plugin: GuestSharePlayerPlugin, item: Any, base_url: str) -> str:
     """Get best cover image URL for item."""
     img = None
@@ -111,7 +123,7 @@ async def handle_share_view(plugin: GuestSharePlayerPlugin, request: web.Request
     provider_id = parts[2]
     item_id = "/".join(parts[3:])
 
-    base_url = plugin.config.get_value(CONF_PUBLIC_BASE_URL, DEFAULT_PUBLIC_BASE_URL).rstrip("/")
+    base_url = get_request_base_url(plugin, request)
     site_name = plugin.config.get_value(CONF_SITE_NAME, DEFAULT_SITE_NAME)
     theme_color = plugin.config.get_value(CONF_THEME_COLOR, DEFAULT_THEME_COLOR)
     author_template = plugin.config.get_value(CONF_EMBED_AUTHOR_TEMPLATE, DEFAULT_EMBED_AUTHOR_TEMPLATE)
@@ -179,7 +191,7 @@ async def handle_api_info(plugin: GuestSharePlayerPlugin, request: web.Request) 
     provider_id = parts[2]
     item_id = "/".join(parts[3:])
 
-    base_url = plugin.config.get_value(CONF_PUBLIC_BASE_URL, DEFAULT_PUBLIC_BASE_URL).rstrip("/")
+    base_url = get_request_base_url(plugin, request)
     cache_bypass = plugin.config.get_value(CONF_CACHE_BYPASS, DEFAULT_CACHE_BYPASS)
     tracks_list = []
 

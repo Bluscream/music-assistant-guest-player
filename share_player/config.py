@@ -17,7 +17,7 @@ CONF_EMBED_TITLE_TEMPLATE = "embed_title_template"
 CONF_EMBED_DESC_TEMPLATE = "embed_desc_template"
 CONF_EMBED_FOOTER_TEMPLATE = "embed_footer_template"
 
-DEFAULT_PUBLIC_BASE_URL = "https://m.minopia.de"
+DEFAULT_PUBLIC_BASE_URL = ""
 DEFAULT_SITE_NAME = "Music Assistant"
 DEFAULT_THEME_COLOR = "#3080ff"
 DEFAULT_CACHE_BYPASS = True
@@ -40,10 +40,10 @@ async def get_config_entries(
         ConfigEntry(
             key=CONF_PUBLIC_BASE_URL,
             type=ConfigEntryType.STRING,
-            label="Public Base URL",
+            label="Public Base URL (Optional Override)",
             default_value=DEFAULT_PUBLIC_BASE_URL,
-            description="The public URL where your player is reached (e.g. https://m.minopia.de or https://music.minopia.de). Used for Discord embed meta tags.",
-            required=True,
+            description="Explicit public URL (e.g. https://music.minopia.de). If left blank, it is auto-detected dynamically from the incoming browser/Discord request.",
+            required=False,
         ),
         ConfigEntry(
             key=CONF_SITE_NAME,
