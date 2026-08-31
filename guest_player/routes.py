@@ -241,11 +241,26 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
             tracks = [t async for t in tracks_gen]
             pl_img = get_image_url(plugin, playlist, base_url)
             for t in tracks:
-                art_name = t.artists[0].name if t.artists else ""
-                pm = next(iter(t.provider_mappings)) if t.provider_mappings else None
+                # Playlists can contain Tracks or Radio items
+                is_radio = getattr(t, "media_type", None) == "radio" or type(t).__name__ == "Radio"
+                if is_radio:
+                    art_name = "Live Radio"
+                    stream_prefix = "radio"
+                    dur = 0
+                else:
+                    stream_prefix = "track"
+                    dur = getattr(t, "duration", 0) or 0
+                    if hasattr(t, "artists") and t.artists:
+                        art_name = t.artists[0].name
+                    elif hasattr(t, "artist") and t.artist:
+                        art_name = t.artist.name if hasattr(t.artist, "name") else str(t.artist)
+                    else:
+                        art_name = ""
+
+                pm = next(iter(t.provider_mappings)) if hasattr(t, "provider_mappings") and t.provider_mappings else None
                 t_prov = pm.provider_instance if pm else provider_id
                 t_id = pm.item_id if pm else t.item_id
-                s_url = f"/stream_guest/track/{t_prov}/{urllib.parse.quote(str(t_id))}"
+                s_url = f"/stream_guest/{stream_prefix}/{t_prov}/{urllib.parse.quote(str(t_id))}"
                 if cache_bypass:
                     s_url += f"?v={int(time.time())}"
                 tracks_list.append({
@@ -253,7 +268,8 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                     "provider": t_prov,
                     "name": t.name,
                     "artist": art_name,
-                    "duration": t.duration,
+                    "duration": dur,
+                    "media_type": stream_prefix,
                     "image": get_image_url(plugin, t, base_url) if hasattr(t, "image") and t.image else pl_img,
                     "stream_url": s_url,
                 })
