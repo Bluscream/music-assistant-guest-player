@@ -21,30 +21,36 @@ async def stream_track_audio(
     request: web.Request,
     provider_id: str,
     item_id: str,
+    media_type: str = "track",
     cache_bypass: bool = True,
 ) -> web.StreamResponse | web.Response:
     """Stream real-time transcoded MP3 (192k) directly to client browser."""
     try:
+        m_type = MediaType.RADIO if media_type == "radio" else MediaType.TRACK
         prov = mass.get_provider(provider_id)
         if prov:
             try:
-                stream_details = await prov.get_stream_details(item_id, MediaType.TRACK)
+                stream_details = await prov.get_stream_details(item_id, m_type)
             except Exception:
                 stream_details = None
         else:
             stream_details = None
 
         if not stream_details:
-            track = await mass.music.tracks.get(item_id, provider_id)
-            if not track:
-                return web.Response(text="Track not found", status=404)
+            if m_type == MediaType.RADIO:
+                item = await mass.music.radio.get(item_id, provider_id)
+            else:
+                item = await mass.music.tracks.get(item_id, provider_id)
 
-            pm = next(iter(track.provider_mappings)) if track.provider_mappings else None
+            if not item:
+                return web.Response(text="Item not found", status=404)
+
+            pm = next(iter(item.provider_mappings)) if item.provider_mappings else None
             target_instance = pm.provider_instance if pm else provider_id
             target_item_id = pm.item_id if pm else item_id
 
             prov = mass.get_provider(target_instance)
-            stream_details = await prov.get_stream_details(target_item_id, MediaType.TRACK)
+            stream_details = await prov.get_stream_details(target_item_id, m_type)
 
         offset = 0
         if "offset" in request.query:

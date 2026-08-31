@@ -103,7 +103,22 @@ async def resolve_media_item(plugin: GuestPlayerPlugin, media_type: str, provide
         return await plugin.mass.music.playlists.get(item_id, provider_id)
     elif media_type in ("artist", "artists"):
         return await plugin.mass.music.artists.get(item_id, provider_id)
+    elif media_type in ("radio", "radios"):
+        return await plugin.mass.music.radio.get(item_id, provider_id)
     return None
+
+
+def normalize_media_type(media_type: str) -> str:
+    """Normalize plural/singular media type string."""
+    mt = media_type.lower()
+    mapping = {
+        "tracks": "track",
+        "albums": "album",
+        "playlists": "playlist",
+        "artists": "artist",
+        "radios": "radio",
+    }
+    return mapping.get(mt, mt)
 
 
 async def handle_share_view(plugin: GuestPlayerPlugin, request: web.Request) -> web.Response:
@@ -125,7 +140,7 @@ async def handle_share_view(plugin: GuestPlayerPlugin, request: web.Request) -> 
     if len(parts) < 4:
         raise web.HTTPFound("/")
 
-    media_type = parts[1].lower().rstrip("s")
+    media_type = normalize_media_type(parts[1])
     provider_id = parts[2]
     item_id = "/".join(parts[3:])
     autoplay = plugin.config.get_value(CONF_AUTOPLAY, DEFAULT_AUTOPLAY)
@@ -191,7 +206,7 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
     if len(parts) < 4:
         return web.json_response({"error": "Invalid path"}, status=400)
 
-    media_type = parts[1].lower().rstrip("s")
+    media_type = normalize_media_type(parts[1])
     provider_id = parts[2]
     item_id = "/".join(parts[3:])
 
@@ -244,6 +259,43 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                     "image": get_image_url(plugin, t, base_url) if hasattr(t, "image") and t.image else pl_img,
                     "stream_url": s_url,
                 })
+        elif media_type == "artist":
+            tracks_gen = plugin.mass.music.artists.tracks(item_id, provider_id)
+            tracks = [t async for t in tracks_gen]
+            for t in tracks:
+                art_name = t.artists[0].name if t.artists else ""
+                pm = next(iter(t.provider_mappings)) if t.provider_mappings else None
+                t_prov = pm.provider_instance if pm else provider_id
+                t_id = pm.item_id if pm else t.item_id
+                s_url = f"/stream_guest/track/{t_prov}/{urllib.parse.quote(str(t_id))}"
+                if cache_bypass:
+                    s_url += f"?v={int(time.time())}"
+                tracks_list.append({
+                    "id": str(t_id),
+                    "provider": t_prov,
+                    "name": t.name,
+                    "artist": art_name,
+                    "duration": t.duration,
+                    "image": get_image_url(plugin, t, base_url),
+                    "stream_url": s_url,
+                })
+        elif media_type == "radio":
+            radio = await plugin.mass.music.radio.get(item_id, provider_id)
+            pm = next(iter(radio.provider_mappings)) if radio.provider_mappings else None
+            r_prov = pm.provider_instance if pm else provider_id
+            r_id = pm.item_id if pm else radio.item_id
+            s_url = f"/stream_guest/radio/{r_prov}/{urllib.parse.quote(str(r_id))}"
+            if cache_bypass:
+                s_url += f"?v={int(time.time())}"
+            tracks_list.append({
+                "id": str(r_id),
+                "provider": r_prov,
+                "name": radio.name,
+                "artist": "Live Radio",
+                "duration": 0,
+                "image": get_image_url(plugin, radio, base_url),
+                "stream_url": s_url,
+            })
         else:  # track
             track = await plugin.mass.music.tracks.get(item_id, provider_id)
             art_name = track.artists[0].name if track.artists else ""
@@ -275,7 +327,8 @@ async def handle_stream_audio(plugin: GuestPlayerPlugin, request: web.Request) -
     if len(parts) < 4:
         return web.Response(text="Invalid stream URL", status=400)
 
+    media_type = normalize_media_type(parts[1])
     provider_id = parts[2]
     item_id = urllib.parse.unquote("/".join(parts[3:]))
     cache_bypass = plugin.config.get_value(CONF_CACHE_BYPASS, DEFAULT_CACHE_BYPASS)
-    return await stream_track_audio(plugin.mass, request, provider_id, item_id, cache_bypass=cache_bypass)
+    return await stream_track_audio(plugin.mass, request, provider_id, item_id, media_type=media_type, cache_bypass=cache_bypass)
