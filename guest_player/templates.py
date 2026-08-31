@@ -804,7 +804,7 @@ def render_link_generator_page(
     theme_color: str,
     base_url: str,
 ) -> str:
-    """Generate link generator UI for converting internal MASS URLs into guest player URLs."""
+    """Generate minimal link generator UI with only the input box."""
     escaped_site_name = html.escape(site_name)
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -812,19 +812,16 @@ def render_link_generator_page(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Link Generator - {escaped_site_name}</title>
-  
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <style>
     :root {{
       --bg-color: #1a1714;
-      --panel-bg: rgba(28, 25, 23, 0.75);
       --accent: {theme_color};
       --text-main: #f8fafc;
-      --text-muted: #a8a29e;
       --border: rgba(255, 255, 255, 0.1);
     }}
     * {{
@@ -840,10 +837,10 @@ def render_link_generator_page(
       background-color: var(--bg-color);
       color: var(--text-main);
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 24px;
+      overflow: hidden;
     }}
     .backdrop {{
       position: fixed;
@@ -852,199 +849,53 @@ def render_link_generator_page(
       z-index: 0;
       pointer-events: none;
     }}
-    .gen-card {{
+    .url-input {{
       position: relative;
       z-index: 1;
       width: 100%;
       max-width: 640px;
-      background: var(--panel-bg);
+      background: rgba(28, 25, 23, 0.85);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 32px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }}
-    .gen-header {{
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }}
-    .gen-header i {{
-      font-size: 1.6rem;
-      color: var(--accent);
-      background: color-mix(in srgb, var(--accent) 15%, transparent);
-      padding: 14px;
-      border-radius: 14px;
-      border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-    }}
-    .gen-title {{
-      font-size: 1.35rem;
-      font-weight: 700;
-    }}
-    .gen-sub {{
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-top: 3px;
-    }}
-    .input-group {{
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }}
-    .url-input {{
-      width: 100%;
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 18px;
-      font-size: 0.95rem;
+      border-radius: 16px;
+      padding: 18px 24px;
+      font-size: 1.05rem;
       color: var(--text-main);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
       outline: none;
-      transition: all 0.2s ease;
+      transition: all 0.25s ease;
     }}
     .url-input:focus {{
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
-    }}
-    .actions-row {{
-      display: flex;
-      gap: 10px;
-    }}
-    .btn {{
-      flex: 1;
-      padding: 12px 18px;
-      border-radius: 10px;
-      border: none;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.2s ease;
-    }}
-    .btn-primary {{
-      background: var(--accent);
-      color: #fff;
-    }}
-    .btn-primary:hover {{
-      filter: brightness(1.15);
-      transform: translateY(-1px);
-    }}
-    .btn-secondary {{
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-main);
-      border: 1px solid var(--border);
-    }}
-    .btn-secondary:hover {{
-      background: rgba(255, 255, 255, 0.14);
-    }}
-    .toast {{
-      font-size: 0.85rem;
-      text-align: center;
-      min-height: 18px;
-      color: var(--accent);
-      transition: opacity 0.2s ease;
-    }}
-    .examples-box {{
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 10px;
-      padding: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.04);
-    }}
-    .examples-title {{
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-      letter-spacing: 0.5px;
-    }}
-    .example-tag {{
-      display: inline-block;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      background: rgba(255, 255, 255, 0.05);
-      padding: 4px 8px;
-      border-radius: 6px;
-      margin-right: 6px;
-      margin-bottom: 6px;
-      cursor: pointer;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      transition: all 0.2s ease;
-    }}
-    .example-tag:hover {{
-      color: var(--text-main);
-      border-color: var(--accent);
-      background: color-mix(in srgb, var(--accent) 15%, transparent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent), 0 20px 40px rgba(0, 0, 0, 0.6);
     }}
   </style>
 </head>
 <body>
   <div class="backdrop"></div>
-  <div class="gen-card">
-    <div class="gen-header">
-      <i class="fa-solid fa-link"></i>
-      <div>
-        <div class="gen-title">Guest Player Link Generator</div>
-        <div class="gen-sub">Paste any Music Assistant internal URL to convert it into a guest player link</div>
-      </div>
-    </div>
-
-    <div class="input-group">
-      <input type="text" class="url-input" id="urlInput" placeholder="https://music.example.com/#/tracks/library/2424" autocomplete="off" spellcheck="false">
-    </div>
-
-    <div class="actions-row">
-      <button class="btn btn-primary" id="copyBtn"><i class="fa-solid fa-copy" id="copyIcon"></i> Copy Link</button>
-      <button class="btn btn-secondary" id="openBtn"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Player</button>
-    </div>
-
-    <div class="toast" id="toast"></div>
-
-    <div class="examples-box">
-      <div class="examples-title">Click an example to test:</div>
-      <span class="example-tag" data-url="https://music.tail230321.ts.net/#/tracks/library/223">Track (Library 223)</span>
-      <span class="example-tag" data-url="https://music.tail230321.ts.net/#/albums/library/510">Album (Library 510)</span>
-      <span class="example-tag" data-url="https://music.tail230321.ts.net/#/playlists/library/109">Playlist (Library 109)</span>
-      <span class="example-tag" data-url="https://music.tail230321.ts.net/#/artists/library/17">Artist (Library 17)</span>
-      <span class="example-tag" data-url="https://music.tail230321.ts.net/#/tracks/ytmusic_free--kRsCDJQe/KIOoHdtxmBc">YouTube Music Track</span>
-    </div>
-  </div>
+  <input type="text" class="url-input" id="urlInput" placeholder="Paste Music Assistant URL to convert..." autocomplete="off" spellcheck="false" autofocus>
 
   <script>
     const input = document.getElementById('urlInput');
-    const copyBtn = document.getElementById('copyBtn');
-    const copyIcon = document.getElementById('copyIcon');
-    const openBtn = document.getElementById('openBtn');
-    const toast = document.getElementById('toast');
     const BASE_URL = '{base_url}' || window.location.origin;
 
     function convertUrl(val) {{
       val = val.trim();
       if (!val) return '';
 
-      // Pattern 1: MA Hash URL e.g. https://.../#/tracks/library/223 or /#/albums/ytmusic/123
       const hashMatch = val.match(/#\\/?(tracks|albums|playlists|artists|track|album|playlist|artist)\\/(.+)$/i);
       if (hashMatch) {{
-        let rest = hashMatch[2];
-        let parts = rest.split('/');
+        let parts = hashMatch[2].split('/');
         let type = hashMatch[1].toLowerCase().replace(/s$/, '');
         let prov = parts[0];
         let id = parts.slice(1).join('/');
         return `${{BASE_URL}}/s/${{type}}/${{prov}}/${{id}}`;
       }}
 
-      // Pattern 2: MA Direct Path without hash e.g. /tracks/library/223
       const pathMatch = val.match(/\\b(tracks|albums|playlists|artists|track|album|playlist|artist)\\/(.+)$/i);
       if (pathMatch && !val.includes('/s/')) {{
-        let rest = pathMatch[2];
-        let parts = rest.split('/');
+        let parts = pathMatch[2].split('/');
         let type = pathMatch[1].toLowerCase().replace(/s$/, '');
         let prov = parts[0];
         let id = parts.slice(1).join('/');
@@ -1054,66 +905,17 @@ def render_link_generator_page(
       return val;
     }}
 
-    function handleConvert(autoFeedback = false) {{
+    function handleConvert() {{
       const original = input.value;
       const converted = convertUrl(original);
       if (converted && converted !== original) {{
         input.value = converted;
-        if (autoFeedback) {{
-          toast.textContent = 'Converted to Guest Player link!';
-          setTimeout(() => {{ toast.textContent = ''; }}, 2500);
-        }}
+        input.select();
       }}
-      return converted;
     }}
 
-    input.addEventListener('input', () => handleConvert(true));
-    input.addEventListener('paste', () => {{
-      setTimeout(() => handleConvert(true), 20);
-    }});
-
-    copyBtn.onclick = async () => {{
-      const targetUrl = handleConvert() || input.value.trim();
-      if (!targetUrl) {{
-        toast.textContent = 'Please enter a URL first.';
-        setTimeout(() => {{ toast.textContent = ''; }}, 2000);
-        return;
-      }}
-
-      try {{
-        if (navigator.clipboard && navigator.clipboard.writeText) {{
-          await navigator.clipboard.writeText(targetUrl);
-        }} else {{
-          input.select();
-          document.execCommand('copy');
-        }}
-        copyIcon.className = 'fa-solid fa-check';
-        toast.textContent = 'Copied to clipboard!';
-        setTimeout(() => {{
-          copyIcon.className = 'fa-solid fa-copy';
-          toast.textContent = '';
-        }}, 2000);
-      }} catch (e) {{
-        toast.textContent = 'Failed to copy: ' + e;
-      }}
-    }};
-
-    openBtn.onclick = () => {{
-      const targetUrl = handleConvert() || input.value.trim();
-      if (targetUrl) {{
-        window.open(targetUrl, '_blank');
-      }} else {{
-        toast.textContent = 'Please enter a URL first.';
-        setTimeout(() => {{ toast.textContent = ''; }}, 2000);
-      }}
-    }};
-
-    document.querySelectorAll('.example-tag').forEach(tag => {{
-      tag.onclick = () => {{
-        input.value = tag.getAttribute('data-url');
-        handleConvert(true);
-      }};
-    }});
+    input.addEventListener('input', handleConvert);
+    input.addEventListener('paste', () => setTimeout(handleConvert, 20));
   </script>
 </body>
 </html>
