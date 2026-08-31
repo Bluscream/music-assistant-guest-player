@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discord Embed & Meta Tag Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=gg+sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    :root {
+      --bg-dark: #0f1115;
+      --card-bg: #181b20;
+      --input-bg: #121418;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --accent: #5865f2;
+      --text-main: #f2f3f5;
+      --text-muted: #949ba4;
+      --text-link: #00a8fc;
+      
+      /* Discord Theme Colors */
+      --discord-bg: #313338;
+      --discord-embed-bg: #2b2d31;
+      --discord-text-normal: #dbdee1;
+      --discord-text-muted: #949ba4;
+      --discord-header: #f2f3f5;
+      --discord-link: #00a8fc;
+      --discord-border: #1e1f22;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 16px 28px;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
+
+    .brand i {
+      color: var(--accent);
+      font-size: 1.4rem;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 24px;
+      padding: 24px;
+      flex: 1;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Left Form Panel */
+    .form-panel {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      height: fit-content;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+    }
+
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    input, textarea, select {
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    .color-picker-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    input[type="color"] {
+      width: 44px;
+      height: 40px;
+      padding: 2px;
+      cursor: pointer;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Right Preview & Code Panel */
+    .preview-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .preview-section {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid var(--border-color);
+    }
+
+    /* Discord Chat Simulation */
+    .discord-chat {
+      background: var(--discord-bg);
+      border-radius: 8px;
+      padding: 20px;
+      display: flex;
+      gap: 16px;
+      font-family: 'gg sans', 'Segoe UI', sans-serif;
+    }
+
+    .discord-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #5865f2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .discord-message {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .discord-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .discord-username {
+      font-weight: 600;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+
+    .discord-badge {
+      background: #5865f2;
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 1px 4px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    .discord-time {
+      font-size: 0.75rem;
+      color: var(--discord-text-muted);
+    }
+
+    .discord-comment {
+      font-size: 0.95rem;
+      color: var(--discord-text-normal);
+      line-height: 1.35;
+      margin-bottom: 4px;
+    }
+
+    .discord-embed {
+      background: var(--discord-embed-bg);
+      border-left: 4px solid var(--accent);
+      border-radius: 4px;
+      padding: 12px 16px;
+      max-width: 520px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+    }
+
+    .embed-content {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .embed-provider {
+      font-size: 0.75rem;
+      color: var(--discord-text-muted);
+    }
+
+    .embed-author {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .embed-author img {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+    }
+
+    .embed-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--discord-link);
+      text-decoration: none;
+    }
+
+    .embed-title:hover {
+      text-decoration: underline;
+    }
+
+    .embed-desc {
+      font-size: 0.85rem;
+      color: var(--discord-text-normal);
+      line-height: 1.35;
+    }
+
+    .embed-thumbnail {
+      width: 80px;
+      height: 80px;
+      border-radius: 4px;
+      object-fit: cover;
+    }
+
+    .embed-large-image {
+      grid-column: 1 / -1;
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-top: 6px;
+    }
+
+    .embed-footer {
+      grid-column: 1 / -1;
+      font-size: 0.75rem;
+      color: var(--discord-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .embed-footer img {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+    }
+
+    /* HTML Code Section */
+    .code-container {
+      position: relative;
+    }
+
+    pre {
+      background: #090a0c;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: #e2e8f0;
+      overflow-x: auto;
+      white-space: pre-wrap;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: var(--accent);
+    }
+
+    @media (max-width: 1024px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+      .form-panel {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <i class="fa-brands fa-discord"></i>
+      <span>Discord Embed & Meta Tag Generator</span>
+    </div>
+    <div style="font-size: 0.85rem; color: var(--text-muted);">
+      Music Assistant Companion Tool
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- Left: Form Controls -->
+    <div class="form-panel">
+      <div class="panel-title">
+        <i class="fa-solid fa-sliders"></i>
+        <span>Embed Configuration</span>
+      </div>
+
+      <div class="form-group">
+        <label>Site / Provider Name</label>
+        <input type="text" id="inputSiteName" value="Music Assistant">
+      </div>
+
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="inputTitle" value="Whoop That Trick">
+      </div>
+
+      <div class="form-group">
+        <label>Target URL</label>
+        <input type="text" id="inputUrl" value="https://music.minopia.de/s/track/library/2328">
+      </div>
+
+      <div class="form-group">
+        <label>Author / Artist</label>
+        <input type="text" id="inputAuthor" value="Ansoland Studio">
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="inputDesc">by Ansoland Studio • Stream on Music Assistant</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Theme Accent Color</label>
+        <div class="color-picker-row">
+          <input type="color" id="inputColorPicker" value="#3080ff">
+          <input type="text" id="inputColorHex" value="#3080ff" style="flex: 1;">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Image Layout Style</label>
+        <select id="inputLayout">
+          <option value="thumbnail">Small Thumbnail (Right Side)</option>
+          <option value="large" selected>Large Banner Image (Full Width)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Image URL</label>
+        <input type="text" id="inputImage" value="https://i.imgur.com/5QRK3ba.png">
+      </div>
+
+      <div class="form-group">
+        <label>Footer Text</label>
+        <input type="text" id="inputFooter" value="Music Assistant • Guest Player">
+      </div>
+    </div>
+
+    <!-- Right: Preview & Generated HTML -->
+    <div class="preview-panel">
+      <!-- Discord Visual Preview -->
+      <div class="preview-section">
+        <div class="panel-title" style="margin-bottom: 16px;">
+          <i class="fa-solid fa-eye"></i>
+          <span>Live Discord Message Preview</span>
+        </div>
+
+        <div class="discord-chat">
+          <div class="discord-avatar">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="discord-message">
+            <div class="discord-meta">
+              <span class="discord-username">MusicBot</span>
+              <span class="discord-badge">BOT</span>
+              <span class="discord-time">Today at 12:00 PM</span>
+            </div>
+            <div class="discord-comment" id="discordLinkText">
+              Check out this track on Music Assistant: https://music.minopia.de/s/track/library/2328
+            </div>
+
+            <!-- The Rendered Embed Card -->
+            <div class="discord-embed" id="previewEmbed">
+              <div class="embed-content">
+                <div class="embed-provider" id="previewSiteName">Music Assistant</div>
+                <div class="embed-author" id="previewAuthor" style="display: none;">
+                  <span id="previewAuthorText"></span>
+                </div>
+                <a href="#" class="embed-title" id="previewTitle">Whoop That Trick</a>
+                <div class="embed-desc" id="previewDesc">by Ansoland Studio • Stream on Music Assistant</div>
+              </div>
+
+              <img src="" class="embed-thumbnail" id="previewThumb" style="display: none;">
+              <img src="" class="embed-large-image" id="previewLargeImg">
+
+              <div class="embed-footer" id="previewFooter">
+                <i class="fa-solid fa-compact-disc"></i>
+                <span id="previewFooterText">Music Assistant • Guest Player</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generated HTML Meta Tags -->
+      <div class="preview-section">
+        <div class="panel-title" style="margin-bottom: 16px;">
+          <i class="fa-solid fa-code"></i>
+          <span>Generated &lt;head&gt; HTML Meta Tags</span>
+        </div>
+
+        <div class="code-container">
+          <button class="copy-btn" id="copyBtn">
+            <i class="fa-regular fa-copy"></i>
+            <span>Copy HTML</span>
+          </button>
+          <pre><code id="generatedCode"></code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const el = {
+      siteName: document.getElementById('inputSiteName'),
+      title: document.getElementById('inputTitle'),
+      url: document.getElementById('inputUrl'),
+      author: document.getElementById('inputAuthor'),
+      desc: document.getElementById('inputDesc'),
+      colorPicker: document.getElementById('inputColorPicker'),
+      colorHex: document.getElementById('inputColorHex'),
+      layout: document.getElementById('inputLayout'),
+      image: document.getElementById('inputImage'),
+      footer: document.getElementById('inputFooter'),
+
+      previewEmbed: document.getElementById('previewEmbed'),
+      previewSiteName: document.getElementById('previewSiteName'),
+      previewTitle: document.getElementById('previewTitle'),
+      previewDesc: document.getElementById('previewDesc'),
+      previewThumb: document.getElementById('previewThumb'),
+      previewLargeImg: document.getElementById('previewLargeImg'),
+      previewFooter: document.getElementById('previewFooter'),
+      previewFooterText: document.getElementById('previewFooterText'),
+      discordLinkText: document.getElementById('discordLinkText'),
+      
+      generatedCode: document.getElementById('generatedCode'),
+      copyBtn: document.getElementById('copyBtn'),
+    };
+
+    function update() {
+      const siteName = el.siteName.value.trim();
+      const title = el.title.value.trim();
+      const url = el.url.value.trim();
+      const author = el.author.value.trim();
+      const desc = el.desc.value.trim();
+      const color = el.colorHex.value.trim() || '#3080ff';
+      const layout = el.layout.value;
+      const image = el.image.value.trim();
+      const footer = el.footer.value.trim();
+
+      // Update Discord Preview
+      el.previewEmbed.style.borderLeftColor = color;
+      el.previewSiteName.textContent = siteName || 'Music Assistant';
+      el.previewTitle.textContent = title || 'Untitled Track';
+      el.previewTitle.href = url || '#';
+      el.previewDesc.textContent = desc || '';
+      el.discordLinkText.textContent = url ? `Check out this link: ${url}` : 'Check out this track!';
+
+      if (layout === 'thumbnail') {
+        el.previewThumb.style.display = image ? 'block' : 'none';
+        el.previewThumb.src = image;
+        el.previewLargeImg.style.display = 'none';
+      } else {
+        el.previewThumb.style.display = 'none';
+        el.previewLargeImg.style.display = image ? 'block' : 'none';
+        el.previewLargeImg.src = image;
+      }
+
+      el.previewFooter.style.display = footer ? 'flex' : 'none';
+      el.previewFooterText.textContent = footer;
+
+      // Generate HTML Head Tags
+      const code = `<!-- Open Graph / Discord Embed Meta Tags -->
+<meta property="og:type" content="music.song">
+<meta property="og:site_name" content="${escapeHtml(siteName)}">
+<meta property="og:title" content="${escapeHtml(title)}">
+<meta property="og:description" content="${escapeHtml(desc)}">
+<meta property="og:url" content="${escapeHtml(url)}">
+<meta property="og:image" content="${escapeHtml(image)}">
+<meta name="theme-color" content="${escapeHtml(color)}">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="${layout === 'large' ? 'summary_large_image' : 'summary'}">
+<meta name="twitter:title" content="${escapeHtml(title)}">
+<meta name="twitter:description" content="${escapeHtml(desc)}">
+<meta name="twitter:image" content="${escapeHtml(image)}">`;
+
+      el.generatedCode.textContent = code;
+    }
+
+    function escapeHtml(str) {
+      return (str || '')
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    // Color sync
+    el.colorPicker.addEventListener('input', () => {
+      el.colorHex.value = el.colorPicker.value;
+      update();
+    });
+
+    el.colorHex.addEventListener('input', () => {
+      if (/^#[0-9A-F]{6}$/i.test(el.colorHex.value)) {
+        el.colorPicker.value = el.colorHex.value;
+      }
+      update();
+    });
+
+    // Event listeners
+    ['inputSiteName', 'inputTitle', 'inputUrl', 'inputAuthor', 'inputDesc', 'inputLayout', 'inputImage', 'inputFooter'].forEach(id => {
+      document.getElementById(id).addEventListener('input', update);
+    });
+
+    // Copy Button
+    el.copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(el.generatedCode.textContent).then(() => {
+        el.copyBtn.innerHTML = '<i class="fa-solid fa-check"></i><span>Copied!</span>';
+        setTimeout(() => {
+          el.copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i><span>Copy HTML</span>';
+        }, 2000);
+      });
+    });
+
+    update();
+  </script>
+</body>
+</html>
