@@ -211,7 +211,6 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                 t_prov = pm.provider_instance if pm else provider_id
                 t_id = pm.item_id if pm else t.item_id
                 s_url = f"/stream_guest/track/{t_prov}/{urllib.parse.quote(str(t_id))}"
-                share_link = f"{base_url}/s/track/{t_prov}/{urllib.parse.quote(str(t_id))}"
                 if cache_bypass:
                     s_url += f"?v={int(time.time())}"
                 tracks_list.append({
@@ -222,7 +221,6 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                     "duration": t.duration,
                     "image": get_image_url(plugin, t, base_url) if hasattr(t, "image") and t.image else album_img,
                     "stream_url": s_url,
-                    "share_url": share_link,
                 })
         elif media_type == "playlist":
             playlist = await plugin.mass.music.playlists.get(item_id, provider_id)
@@ -235,7 +233,6 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                 t_prov = pm.provider_instance if pm else provider_id
                 t_id = pm.item_id if pm else t.item_id
                 s_url = f"/stream_guest/track/{t_prov}/{urllib.parse.quote(str(t_id))}"
-                share_link = f"{base_url}/s/track/{t_prov}/{urllib.parse.quote(str(t_id))}"
                 if cache_bypass:
                     s_url += f"?v={int(time.time())}"
                 tracks_list.append({
@@ -246,7 +243,6 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                     "duration": t.duration,
                     "image": get_image_url(plugin, t, base_url) if hasattr(t, "image") and t.image else pl_img,
                     "stream_url": s_url,
-                    "share_url": share_link,
                 })
         else:  # track
             track = await plugin.mass.music.tracks.get(item_id, provider_id)
@@ -255,7 +251,6 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
             t_prov = pm.provider_instance if pm else provider_id
             t_id = pm.item_id if pm else track.item_id
             s_url = f"/stream_guest/track/{t_prov}/{urllib.parse.quote(str(t_id))}"
-            share_link = f"{base_url}/s/track/{t_prov}/{urllib.parse.quote(str(t_id))}"
             if cache_bypass:
                 s_url += f"?v={int(time.time())}"
             tracks_list.append({
@@ -266,7 +261,6 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                 "duration": track.duration,
                 "image": get_image_url(plugin, track, base_url),
                 "stream_url": s_url,
-                "share_url": share_link,
             })
     except Exception as e:
         LOGGER.exception("Error preparing guest api payload: %s", e)

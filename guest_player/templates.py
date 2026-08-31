@@ -729,9 +729,10 @@ def render_player_page(
 
     shareBtn.onclick = async () => {{
       const currentTrack = playlist[currentIndex] || initialItem;
-      let shareUrl = currentTrack.share_url;
-      if (!shareUrl) {{
-        // Fallback to absolute single track link or current location
+      let shareUrl;
+      if (currentTrack && currentTrack.provider && currentTrack.id) {{
+        shareUrl = `${{window.location.origin}}/s/track/${{currentTrack.provider}}/${{encodeURIComponent(currentTrack.id)}}`;
+      }} else {{
         shareUrl = window.location.href.split('#')[0];
       }}
 
