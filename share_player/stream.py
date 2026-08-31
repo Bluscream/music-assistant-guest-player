@@ -53,6 +53,14 @@ async def stream_track_audio(
             except (ValueError, TypeError):
                 offset = 0
 
+        # Ensure seeking flags and duration are present on stream_details
+        if stream_details:
+            stream_details.allow_seek = True
+            stream_details.can_seek = True
+            if not stream_details.duration:
+                # Fill duration from track item or offset + 300
+                stream_details.duration = max(offset + 300, 300)
+
         pcm_format = AudioFormat(
             content_type=ContentType.PCM_S16LE,
             sample_rate=44100,
