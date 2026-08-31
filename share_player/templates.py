@@ -4,6 +4,17 @@ from __future__ import annotations
 
 import html
 import json
+from typing import Any
+
+
+def format_embed_line(tmpl: str, context: dict[str, Any], default_val: str = "") -> str:
+    """Format an embed template string safely using context variables."""
+    if not tmpl:
+        return default_val
+    try:
+        return tmpl.format(**context)
+    except Exception:
+        return default_val
 
 
 def render_player_page(
@@ -17,9 +28,13 @@ def render_player_page(
     site_name: str,
     theme_color: str,
     duration: int = 0,
+    author_template: str = "{site_name}",
     title_template: str = "{title}",
     desc_template: str = "🎵 {media_type_label} by {artist}{duration_str}",
     footer_template: str = "",
+    album_name: str = "",
+    year: int | str = "",
+    provider_name: str = "",
 ) -> str:
     """Generate modern full-width Music Assistant styled player matching the official UI."""
     media_type_map = {
@@ -35,30 +50,26 @@ def render_player_page(
     context = {
         "title": title or "",
         "artist": artist_name or site_name or "",
+        "album": album_name or "",
         "site_name": site_name or "Music Assistant",
+        "provider": provider_name or "",
         "media_type": media_type or "track",
         "media_type_label": media_type_label,
         "duration": dur_formatted,
         "duration_str": dur_str,
+        "year": str(year) if year else "",
     }
 
-    def safe_format(tmpl: str, default_val: str) -> str:
-        if not tmpl:
-            return default_val
-        try:
-            return tmpl.format(**context)
-        except Exception:
-            return default_val
-
-    rendered_title = safe_format(title_template, title or f"{media_type_label} on {site_name}")
-    rendered_desc = safe_format(desc_template, f"🎵 {media_type_label} by {artist_name or site_name}{dur_str}")
-    rendered_footer = safe_format(footer_template, "").strip()
+    rendered_author = format_embed_line(author_template, context, site_name or "Music Assistant")
+    rendered_title = format_embed_line(title_template, context, title or f"{media_type_label} on {site_name}")
+    rendered_desc = format_embed_line(desc_template, context, f"🎵 {media_type_label} by {artist_name or site_name}{dur_str}")
+    rendered_footer = format_embed_line(footer_template, context, "").strip()
     if rendered_footer:
         rendered_desc = f"{rendered_desc}\n{rendered_footer}"
 
     escaped_title = html.escape(rendered_title)
     escaped_desc = html.escape(rendered_desc)
-    escaped_site_name = html.escape(site_name)
+    escaped_site_name = html.escape(rendered_author)
     # Ensure image_url is absolute so Discord proxy can fetch it
     full_img_url = image_url if image_url.startswith("http") else f"{page_url.split('/s/')[0]}{image_url}"
     escaped_img = html.escape(full_img_url)
