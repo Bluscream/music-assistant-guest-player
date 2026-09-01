@@ -1,7 +1,4 @@
-"""Route handlers for Guest Player."""
-
-from __future__ import annotations
-
+import inspect
 import logging
 import re
 import time
@@ -313,6 +310,19 @@ async def handle_share_view(plugin: GuestPlayerPlugin, request: web.Request) -> 
     return web.Response(text=html_text, content_type="text/html")
 
 
+async def collect_tracks(res: Any) -> list[Any]:
+    """Safely collect tracks whether returned as coroutine, async generator, list, or regular generator."""
+    if inspect.iscoroutine(res):
+        res = await res
+    if hasattr(res, "__aiter__"):
+        return [t async for t in res]
+    if isinstance(res, (list, tuple)):
+        return list(res)
+    if hasattr(res, "__iter__"):
+        return list(res)
+    return []
+
+
 async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> web.Response:
     """Return JSON payload of track(s) for the player."""
     if request.path.rstrip("/") == "/api_guest/resolve_url":
@@ -347,11 +357,11 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
     try:
         if media_type == "album":
             album = await plugin.mass.music.albums.get(item_id, provider_id)
-            tracks_gen = plugin.mass.music.albums.tracks(item_id, provider_id)
-            tracks = [t async for t in tracks_gen]
+            tracks_res = plugin.mass.music.albums.tracks(item_id, provider_id)
+            tracks = await collect_tracks(tracks_res)
             album_img = get_image_url(plugin, album, base_url)
             for t in tracks:
-                art_name = t.artists[0].name if t.artists else album.artists[0].name if album.artists else ""
+                art_name = t.artists[0].name if (hasattr(t, "artists") and t.artists) else (album.artists[0].name if (hasattr(album, "artists") and album.artists) else "")
                 valid_pm = None
                 if hasattr(t, "provider_mappings") and t.provider_mappings:
                     for pm in t.provider_mappings:
@@ -379,14 +389,14 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                     "provider": t_prov,
                     "name": t.name,
                     "artist": art_name,
-                    "duration": t.duration,
+                    "duration": getattr(t, "duration", 0) or 0,
                     "image": get_image_url(plugin, t, base_url) if hasattr(t, "image") and t.image else album_img,
                     "stream_url": s_url,
                 })
         elif media_type == "playlist":
             playlist = await plugin.mass.music.playlists.get(item_id, provider_id)
-            tracks_gen = plugin.mass.music.playlists.tracks(item_id, provider_id)
-            tracks = [t async for t in tracks_gen]
+            tracks_res = plugin.mass.music.playlists.tracks(item_id, provider_id)
+            tracks = await collect_tracks(tracks_res)
             pl_img = get_image_url(plugin, playlist, base_url)
             for t in tracks:
                 # Playlists can contain Tracks or Radio items
@@ -489,8 +499,8 @@ async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> we
                     "stream_url": s_url,
                 })
         elif media_type == "artist":
-            tracks_gen = plugin.mass.music.artists.tracks(item_id, provider_id)
-            tracks = [t async for t in tracks_gen]
+            tracks_res = plugin.mass.music.artists.tracks(item_id, provider_id)
+            tracks = await collect_tracks(tracks_res)
             for t in tracks:
                 art_name = t.artists[0].name if t.artists else ""
                 pm = next(iter(t.provider_mappings)) if t.provider_mappings else None

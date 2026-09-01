@@ -161,8 +161,8 @@ let playlist=[],currentIndex=0,isLooping=false,seekOffset=0;
 const initialItem={{name:{json.dumps(title)},artist:{json.dumps(artist_name)},image:{json.dumps(image_url)},media_type:{json.dumps(media_type)},stream_url:{json.dumps(stream_url)}}};
 function formatTime(s){{if(!isFinite(s)||isNaN(s)||s<0)return'0:00';const m=Math.floor(s/60),sec=Math.floor(s%60);return`${{m}}:${{sec<10?'0':''}}${{sec}}`;}}
 const AUTO_PLAY={json.dumps(autoplay)};
-function isLiveStream(){{const t=playlist[currentIndex];return !t||!t.duration||t.duration<=0||t.media_type==='radio';}}
-function getTrackDuration(){{const t=playlist[currentIndex];if(t&&t.duration&&isFinite(t.duration))return t.duration;if(audio.duration&&isFinite(audio.duration))return audio.duration;return 0;}}
+function isLiveStream(){{const t=playlist[currentIndex];return t&&t.media_type==='radio';}}
+function getTrackDuration(){{const t=playlist[currentIndex];if(t&&t.duration&&isFinite(t.duration)&&t.duration>0)return t.duration;if(audio.duration&&isFinite(audio.duration)&&audio.duration>0)return audio.duration;return 0;}}
 function getInitialTrackIndex(){{const h=window.location.hash.replace(/^#/,'').trim();if(!h)return 0;const n=parseInt(h,10);if(!isNaN(n)){{if(n>=1&&n<=playlist.length)return n-1;if(n>=0&&n<playlist.length)return n;}}const l=decodeURIComponent(h).toLowerCase(),idx=playlist.findIndex(t=>(t.id&&String(t.id).toLowerCase()===l)||(t.name&&t.name.toLowerCase()===l));return idx!==-1?idx:0;}}
 async function loadData(){{try{{const res=await fetch('{api_url}'),data=await res.json();if(data.tracks&&data.tracks.length>0){{playlist=data.tracks;}}else{{playlist=[initialItem];}}}}catch(e){{playlist=[initialItem];}}
 if(playlist.length<=1){{mainContentEl.classList.add('single-item');if(prevBtnEl)prevBtnEl.style.display='none';if(nextBtnEl)nextBtnEl.style.display='none';}}else{{mainContentEl.classList.remove('single-item');if(prevBtnEl)prevBtnEl.style.display='flex';if(nextBtnEl)nextBtnEl.style.display='flex';}}
