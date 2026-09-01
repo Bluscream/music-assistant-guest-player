@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 import urllib.parse
 from typing import TYPE_CHECKING, Any
@@ -32,6 +33,7 @@ from .config import (
 from .stream import stream_track_audio
 from .templates import (
     render_link_generator_page,
+    render_not_found_page,
     render_player_page,
     render_svg_placeholder,
 )
@@ -109,6 +111,80 @@ async def handle_image_guest(plugin: GuestPlayerPlugin, request: web.Request) ->
         return web.Response(text=svg_placeholder, content_type="image/svg+xml", headers={"Cache-Control": "public, max-age=86400"})
 
 
+def get_canonical_provider_mapping(item: Any) -> Any:
+    """Find the most persistent provider mapping (e.g. filesystem_local or ytmusic_free) on a media item."""
+    if not item or not hasattr(item, "provider_mappings") or not item.provider_mappings:
+        return None
+
+    # Priority 1: Local filesystem providers (permanent disk paths)
+    for pm in item.provider_mappings:
+        if getattr(pm, "available", True) and getattr(pm, "provider_domain", "").startswith("filesystem"):
+            return pm
+
+    # Priority 2: Streaming / cloud providers (non-library and non-builtin)
+    for pm in item.provider_mappings:
+        domain = getattr(pm, "provider_domain", "")
+        instance = getattr(pm, "provider_instance", "")
+        if getattr(pm, "available", True) and domain not in ("library", "builtin") and instance not in ("library", "builtin"):
+            return pm
+
+    # Priority 3: Fallback to any non-library instance mapping
+    for pm in item.provider_mappings:
+        instance = getattr(pm, "provider_instance", "")
+        if instance not in ("library", "builtin"):
+            return pm
+
+    return None
+
+
+async def resolve_canonical_url(plugin: GuestPlayerPlugin, raw_url: str, base_url: str) -> str | None:
+    """Parse and resolve any raw URL or URI to its permanent guest player URL."""
+    raw = raw_url.strip()
+    if not raw:
+        return None
+
+    # Handle hash format e.g. https://music.minopia.de/#/tracks/2429 or #/playlists/280
+    match_hash = re.search(r"#/?(tracks|albums|playlists|artists|radios|track|album|playlist|artist|radio)/(\w+)/?(.+)?", raw, re.I)
+    if match_hash:
+        m_type = normalize_media_type(match_hash.group(1))
+        p_id = match_hash.group(2)
+        i_id = match_hash.group(3) or ""
+        if not i_id:
+            i_id = p_id
+            p_id = "library"
+    else:
+        # Handle guest player URL /s/track/library/2429 or /s/track/filesystem_local--.../...
+        match_s = re.search(r"/s/(tracks|albums|playlists|artists|radios|track|album|playlist|artist|radio)/([^/]+)/(.+)", raw, re.I)
+        if match_s:
+            m_type = normalize_media_type(match_s.group(1))
+            p_id = match_s.group(2)
+            i_id = urllib.parse.unquote(match_s.group(3))
+        else:
+            # Handle URI scheme e.g. library://track/2429 or ytmusic_free://track/VkXMXcZu_UI
+            match_uri = re.match(r"(\w+)(?:--\w+)?://(track|album|playlist|artist|radio)/(.+)", raw, re.I)
+            if match_uri:
+                p_id = match_uri.group(1)
+                m_type = normalize_media_type(match_uri.group(2))
+                i_id = match_uri.group(3)
+            else:
+                return None
+
+    try:
+        item = await resolve_media_item(plugin, m_type, p_id, i_id)
+        if item:
+            canonical_pm = get_canonical_provider_mapping(item)
+            if canonical_pm:
+                c_prov = canonical_pm.provider_instance
+                c_id = getattr(canonical_pm, "provider_item_id", None) or getattr(canonical_pm, "item_id", None)
+                if c_prov and c_id and c_prov != "library":
+                    return f"{base_url}/s/{m_type}/{c_prov}/{urllib.parse.quote(str(c_id), safe='')}"
+            return f"{base_url}/s/{m_type}/{p_id}/{urllib.parse.quote(str(i_id), safe='')}"
+    except Exception as e:
+        LOGGER.debug("Could not resolve canonical URL for %s: %s", raw, e)
+
+    return None
+
+
 async def resolve_media_item(plugin: GuestPlayerPlugin, media_type: str, provider_id: str, item_id: str) -> Any:
     """Fetch media item from Music Assistant."""
     media_type = media_type.lower()
@@ -173,7 +249,26 @@ async def handle_share_view(plugin: GuestPlayerPlugin, request: web.Request) -> 
         item = None
 
     if not item:
-        raise web.HTTPFound("/")
+        html_404 = render_not_found_page(
+            site_name=site_name,
+            theme_color=theme_color,
+            base_url=base_url,
+            media_type=media_type,
+            provider_id=provider_id,
+            item_id=item_id,
+        )
+        return web.Response(text=html_404, status=404, content_type="text/html")
+
+    # If accessed via transient library ID, redirect to canonical permanent URL
+    if provider_id == "library":
+        canonical_pm = get_canonical_provider_mapping(item)
+        if canonical_pm:
+            c_prov = canonical_pm.provider_instance
+            c_id = getattr(canonical_pm, "provider_item_id", None) or getattr(canonical_pm, "item_id", None)
+            if c_prov and c_id and c_prov != "library":
+                canonical_path = f"/s/{media_type}/{c_prov}/{urllib.parse.quote(str(c_id), safe='')}"
+                query_str = f"?{request.query_string}" if request.query_string else ""
+                raise web.HTTPMovedPermanently(f"{canonical_path}{query_str}")
 
     album_name = ""
     item_year = ""
@@ -220,6 +315,14 @@ async def handle_share_view(plugin: GuestPlayerPlugin, request: web.Request) -> 
 
 async def handle_api_info(plugin: GuestPlayerPlugin, request: web.Request) -> web.Response:
     """Return JSON payload of track(s) for the player."""
+    if request.path.rstrip("/") == "/api_guest/resolve_url":
+        raw_url = request.query.get("url", "").strip()
+        if not raw_url:
+            return web.json_response({"error": "Missing url parameter"}, status=400)
+        base_url = get_request_base_url(plugin, request)
+        canonical = await resolve_canonical_url(plugin, raw_url, base_url)
+        return web.json_response({"canonical_url": canonical}, headers={"Access-Control-Allow-Origin": "*"})
+
     parts = [p for p in request.path.split("/") if p]
     if len(parts) < 4:
         return web.json_response({"error": "Invalid path"}, status=400)

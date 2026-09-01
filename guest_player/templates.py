@@ -189,6 +189,35 @@ loadData();
 </script></body></html>"""
 
 
+def render_not_found_page(
+    site_name: str,
+    theme_color: str,
+    base_url: str,
+    media_type: str = "item",
+    provider_id: str = "",
+    item_id: str = "",
+) -> str:
+    """Render styled 404 page for missing media items."""
+    escaped_site_name = html.escape(site_name)
+    base_css = get_base_css(theme_color, panel_bg="rgba(28, 25, 23, 0.85)", border="rgba(255, 255, 255, 0.1)")
+    page_css = (
+        f"{base_css}"
+        "html,body{width:100%;height:100%;background-color:var(--bg-color);color:var(--text-main);display:flex;align-items:center;justify-content:center;padding:24px;overflow:hidden;}"
+        f".backdrop{{position:fixed;inset:-20%;background:radial-gradient(circle at center,color-mix(in srgb,var(--accent) 15%,transparent) 0%,rgba(20,18,16,0.98) 70%);z-index:0;pointer-events:none;}}"
+        ".card{position:relative;z-index:1;width:100%;max-width:540px;background:var(--panel-bg);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid var(--border);border-radius:20px;padding:36px 32px;text-align:center;box-shadow:0 24px 48px rgba(0,0,0,0.6);display:flex;flex-direction:column;align-items:center;gap:16px;}"
+        ".icon-wrap{width:72px;height:72px;border-radius:50%;background:color-mix(in srgb,var(--accent) 15%,transparent);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:2rem;margin-bottom:8px;border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);}"
+        ".title{font-size:1.6rem;font-weight:700;letter-spacing:-0.5px;}"
+        ".desc{font-size:0.95rem;color:var(--text-muted);line-height:1.5;max-width:420px;}"
+        ".btn-group{display:flex;gap:12px;margin-top:12px;width:100%;justify-content:center;}"
+        ".btn{padding:12px 24px;border-radius:12px;font-size:0.95rem;font-weight:600;text-decoration:none;transition:all 0.2s ease;cursor:pointer;}"
+        ".btn-primary{background:var(--accent);color:#fff;border:none;box-shadow:0 4px 16px color-mix(in srgb,var(--accent) 40%,transparent);}"
+        ".btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 20px color-mix(in srgb,var(--accent) 55%,transparent);}"
+        ".btn-secondary{background:rgba(255,255,255,0.08);color:var(--text-main);border:1px solid var(--border);}"
+        ".btn-secondary:hover{background:rgba(255,255,255,0.14);transform:translateY(-2px);}"
+    )
+    return f"""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Media Not Found - {escaped_site_name}</title>{COMMON_FONTS_ICONS}<style>{page_css}</style></head><body><div class="backdrop"></div><div class="card"><div class="icon-wrap"><i class="fa-solid fa-compact-disc"></i></div><div class="title">Media Not Found</div><div class="desc">The requested {html.escape(media_type)} could not be found in the library. It may have been moved, renamed, or deleted.</div><div class="btn-group"><a href="{base_url}/s" class="btn btn-primary"><i class="fa-solid fa-link" style="margin-right:8px;"></i>Link Generator</a><a href="{base_url}/" class="btn btn-secondary"><i class="fa-solid fa-house" style="margin-right:8px;"></i>Home</a></div></div></body></html>"""
+
+
 def render_link_generator_page(
     site_name: str,
     theme_color: str,
@@ -207,8 +236,45 @@ def render_link_generator_page(
 
     return f"""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Link Generator - {escaped_site_name}</title>{COMMON_FONTS}<style>{gen_css}</style></head><body><div class="backdrop"></div><input type="text" class="url-input" id="urlInput" placeholder="Paste Music Assistant URL to convert..." autocomplete="off" spellcheck="false" autofocus><script>
 const input=document.getElementById('urlInput'),BASE_URL='{base_url}'||window.location.origin;
-function convertUrl(v){{v=v.trim();if(!v)return'';const h=v.match(/#\\/?(tracks|albums|playlists|artists|radios|track|album|playlist|artist|radio)\\/(.+)$/i);if(h){{let p=h[2].split('/'),t=h[1].toLowerCase().replace(/s$/,'');return`${{BASE_URL}}/s/${{t}}/${{p[0]}}/${{p.slice(1).join('/')}}`;}}const m=v.match(/\\b(tracks|albums|playlists|artists|radios|track|album|playlist|artist|radio)\\/(.+)$/i);if(m&&!v.includes('/s/')){{let p=m[2].split('/'),t=m[1].toLowerCase().replace(/s$/,'');return`${{BASE_URL}}/s/${{t}}/${{p[0]}}/${{p.slice(1).join('/')}}`;}}return v;}}
-function handleConvert(){{const orig=input.value,conv=convertUrl(orig);if(conv&&conv!==orig){{input.value=conv;input.select();}}}}
+let debounceTimer=null;
+async function resolveToServer(v){{
+    try{{
+        const res=await fetch(`${{BASE_URL}}/api_guest/resolve_url?url=${{encodeURIComponent(v)}}`);
+        if(res.ok){{
+            const data=await res.json();
+            if(data.canonical_url){{
+                input.value=data.canonical_url;
+                input.select();
+            }}
+        }}
+    }}catch(e){{}}
+}}
+function convertUrl(v){{
+    v=v.trim();
+    if(!v)return'';
+    const h=v.match(/#\\/?(tracks|albums|playlists|artists|radios|track|album|playlist|artist|radio)\\/(.+)$/i);
+    if(h){{
+        let p=h[2].split('/'),t=h[1].toLowerCase().replace(/s$/,'');
+        return`${{BASE_URL}}/s/${{t}}/${{p[0]}}/${{p.slice(1).join('/')}}`;
+    }}
+    const m=v.match(/\\b(tracks|albums|playlists|artists|radios|track|album|playlist|artist|radio)\\/(.+)$/i);
+    if(m&&!v.includes('/s/')){{
+        let p=m[2].split('/'),t=m[1].toLowerCase().replace(/s$/,'');
+        return`${{BASE_URL}}/s/${{t}}/${{p[0]}}/${{p.slice(1).join('/')}}`;
+    }}
+    return v;
+}}
+function handleConvert(){{
+    const orig=input.value,conv=convertUrl(orig);
+    if(conv&&conv!==orig){{
+        input.value=conv;
+        input.select();
+    }}
+    clearTimeout(debounceTimer);
+    if(input.value&&(input.value.includes('/library/')||input.value.includes('library://')||input.value.includes('#/'))){{
+        debounceTimer=setTimeout(()=>resolveToServer(input.value),150);
+    }}
+}}
 input.addEventListener('input',handleConvert);
 input.addEventListener('paste',()=>setTimeout(handleConvert,20));
 </script></body></html>"""
